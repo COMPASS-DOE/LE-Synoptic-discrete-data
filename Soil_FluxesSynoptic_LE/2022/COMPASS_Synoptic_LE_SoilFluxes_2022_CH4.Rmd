@@ -139,6 +139,8 @@ alldat <- alldat%>%filter(!label %in% c("PTR_UPDmonTRtion",
       str_c(Site, ., sep = "_")
   )
  
+#I have to change labels that were recorded wrong - double check the checked data csv from field notes
+
 ```
 
 ## Create a unique Plot_ID, check if there is a meta-data file, if not, create a meta-data file
@@ -190,8 +192,8 @@ if (file.exists(file_path)) {
     #create a metadata file from the Plot IDs 
       # pull timestart timestamps to put in the metadata and obs lengths 
   metadata <- alldat %>%
-  group_by(SN, Plot_ID) %>%
-  summarise(SN = first(SN), # InstrumentSerialNumber Roberta => I included this to process more the one licor per time
+  group_by(InstrumentSerialNumber, Plot_ID) %>%
+  summarise(SN = first(InstrumentSerialNumber), #Roberta => I included this to process more the one licor per time
     Date = format(min(TIMESTAMP), "%Y-%m-%d"),
     Time_start = format(min(TIMESTAMP), "%H:%M:%S"),
     First_Timestamp = min(TIMESTAMP),  # Minimum (earliest) timestamp for each Plot_ID
@@ -199,7 +201,7 @@ if (file.exists(file_path)) {
     Total_Time = as.numeric(difftime(max(TIMESTAMP), min(TIMESTAMP), units = "secs")),  # Time difference in seconds
     ) %>%
   ungroup() %>%
-  mutate(Total_Time = pmin(Total_Time, 120),
+  mutate(Total_Time = pmin(Total_Time, 60),
           drop = FALSE,# Add a 'drop' column with 'FALSE' for every row 
           Notes = "") 
   #mutate(notes = " ")  # Add a 'drop' column with 'FALSE' for every row
@@ -294,6 +296,7 @@ alldat<-alldat%>% filter(!is.na(label))
 
 # matching SN
 alldat <- alldat %>%
+  rename(SN=InstrumentSerialNumber)%>%
   group_by(SN) %>%
   mutate(
     metadat_row = ffi_metadata_match(
@@ -339,6 +342,8 @@ alldat$CH4_nmol_m2 <- alldat$CH4_nmol / 0.0318 #adjust for the area
 #need to create a new line that would say only calculate the flux if the drop column is false
     #before we add this we need to figure out how to drop except for the last flux taken 
 
+# I have different collars offset to change configuration here
+
 
 #calculate fluxes for all other sites 
 fluxes <- ffi_compute_fluxes(alldat,
@@ -353,31 +358,6 @@ allflux <- fluxes
 
 ```
 
-## Checking the quality of the measurements
-```{r}
-
-
-fluxes <- fluxes %>%
-  mutate(
-    linear_ok = lin_r.squared >= 0.8,
-    nonlinear_ok = HM81_r.squared >= 0.8,
-    accepted = linear_ok | (!linear_ok & nonlinear_ok)
-  )
-summary_df <- fluxes %>%
-  summarise(
-    total_obs = n(),
-    linear_ok_count = sum(linear_ok, na.rm = TRUE),
-    nonlinear_only_count = sum(!linear_ok & nonlinear_ok, na.rm = TRUE),
-    rejected_count = sum(!linear_ok & !nonlinear_ok, na.rm = TRUE),
-    pct_linear_ok = 100 * linear_ok_count / total_obs,
-    pct_nonlinear_only = 100 * nonlinear_only_count / total_obs,
-    pct_rejected = 100 * rejected_count / total_obs
-  )
-
-summary_df
-#total_obs linear_ok_count nonlinear_only_count rejected_count pct_linear_ok pct_nonlinear_only pct_rejected
-#1       643             531                   12             20      82.58165           1.866252      3.11042
-```
 
 ## Remove fluxes that were retaken - this works, but I think we want to do this earlier with the drop column???   
 ```{r}
@@ -487,16 +467,16 @@ ggplot(allflux, aes(BasePlot, lin_flux.estimate, color = lin_r.squared)) +
   ylab("CH4 flux (nmol/m2/s)")
 
 #sort fluxes by R2 
-fluxes_good <- as.data.frame(subset(allflux, lin_r.squared >= .90, select = Plot:TIMESTAMP_max))
-fluxes_lowr2 <- as.data.frame(subset(allflux, lin_r.squared < .90 & lin_flux.estimate < 1, select = Plot:TIMESTAMP_max))
-fluxes_weird <- as.data.frame(subset(allflux, lin_r.squared < .90 & lin_flux.estimate > 1, select = Plot:TIMESTAMP_max))
+fluxes_good <- as.data.frame(subset(allflux, lin_r.squared >= .90, select = BasePlot:TIMESTAMP_max))
+fluxes_lowr2 <- as.data.frame(subset(allflux, lin_r.squared < .90 & lin_flux.estimate < 1, select = BasePlot:TIMESTAMP_max))
+fluxes_weird <- as.data.frame(subset(allflux, lin_r.squared < .90 & lin_flux.estimate > 1, select = BasePlot:TIMESTAMP_max))
 
 #find fluxes that represent the first and fourth quartile of the data 
 low <- quantile(allflux$lin_flux.estimate, 0.05) 
 high <- quantile(allflux$lin_flux.estimate, 0.95) 
 
-fluxes_low <- as.data.frame(subset(allflux, lin_flux.estimate <= low, select = Plot:TIMESTAMP_max))
-fluxes_high <- as.data.frame(subset(allflux, lin_flux.estimate >= high, select = Plot:TIMESTAMP_max))
+fluxes_low <- as.data.frame(subset(allflux, lin_flux.estimate <= low, select = BasePlot:TIMESTAMP_max))
+fluxes_high <- as.data.frame(subset(allflux, lin_flux.estimate >= high, select = BasePlot:TIMESTAMP_max))
 
 tails <- rbind(fluxes_low, fluxes_high)
 
@@ -544,7 +524,7 @@ fixedplots <- c("2_Oct_MSM_TR_1a", "1_Jul_GWI_TR_1a" , "2_Sep_MSM_TR_4", "1_May_
 ```{r, echo=FALSE}
 
 ### pull a random sample of good fluxes to check and plot 
-good_plots <- unique(fluxes_good$Plot)
+good_plots <- unique(fluxes_good$BasePlot)
 
 # take a random sample (FALSE so we don't get the same plot twice)
 # set.seed(...) to guarantee reproducibility
