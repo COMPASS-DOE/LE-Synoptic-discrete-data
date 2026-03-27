@@ -1,5 +1,5 @@
 ---
-title: "COMPASS_Synoptic_SoilFluxes_2022_CH4"
+title: "COMPASS_Synoptic_SoilFluxes_2022_CO2"
 author: "Roberta Peixoto "
 date: "2026-01-22"
 output: html_document:
