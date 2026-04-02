@@ -475,20 +475,9 @@ tails <- rbind(fluxes_low, fluxes_high)
 
 #### If something is in a V shape should we take the second part to make a positive linear curve?
 
-# Plots selected for QA/QC of deadband behavior
-tobechecked <- c(
-  "2022_08_16_CRC_W_43_1",
-    "2022_08_17_OWC_TR_64_1",
-    "2022_07_19_PTR_UP_1_2",
-    "2022_07_19_PTR_TR_15Mid_1",
-    "2022_07_08_CRC_W_42_1",
-    "2022_07_18_PTR_W_21_1",
-    "2022_11_04_OWC_TR_64_2"
-)
-
 # Subset data and create relative time (seconds since flux start)
 r_all <- alldat %>%
-  filter(Plot_ID %in% tobechecked) %>%
+  filter(Plot_ID %in% deadband_overrides$Plot_ID) %>%
   group_by(Plot_ID) %>%
   mutate(
     time_sec = as.numeric(
@@ -497,9 +486,16 @@ r_all <- alldat %>%
   ) %>%
   ungroup()
 
-# Plot data highlighting points used vs discarded by deadband
+
+# Random sample of plots for visualization
+plots_sample <- sample(unique(r_all$Plot_ID), 6,replace = FALSE)
+
+r_plot <- r_all %>%
+  filter(Plot_ID %in% plots_sample)
+
+# Plot
 ggplot(
-  r_all,
+  r_plot,
   aes(
     x = TIMESTAMP,
     y = co2,
@@ -507,10 +503,9 @@ ggplot(
   )
 ) +
   geom_point(size = 1.8) +
-  facet_wrap(~ Plot_ID, scales = "free", ncol = 3) +
+  facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +
   scale_color_manual(
     values = c("grey60", "red"),
-    name = "Used to adjust",
     labels = c("Discarded (deadband)", "Used after deadband")
   ) +
   theme_classic() +
