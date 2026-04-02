@@ -89,7 +89,7 @@ alldat <- data.table::rbindlist(alldat1, fill = TRUE)
 
 ## Unfortunatly - we had many problems with labels - we need to include the sites in the Plot_ID
 ```{r}
-# 1. Table describing the days we have visited each site
+# Table describing the days we have visited each site
 site_lookup <- tibble::tribble(
   ~Date,         ~Site,
   "2023-01-20",  "CRC",
@@ -120,17 +120,23 @@ site_lookup <- tibble::tribble(
 ) %>%
   mutate(Date = as.Date(Date))
 
-# 2. alldat  - date formatting
+# alldat  - date formatting
 alldat <- alldat %>%
   mutate(Date = as.Date(TIMESTAMP))%>%
   left_join(site_lookup, by = "Date")
 
-# 4. Fixing label code problems 
+
+# Fixing label code problems 
 alldat <- alldat %>%
+  
+  ## Remove known invalid labels
   filter(!label %in% c("Test2", "Up30", "Up30c", "Up27")) %>%
-  mutate(  label = label %>%
-      str_remove_all("[sSeE]") %>%
-      str_replace_all("-", "_") %>%
+
+  ## Normalize the raw label (do NOT trust embedded site)
+  mutate(
+    label = label %>%
+      str_remove_all("[sSeE]") %>%          # remove stray s/e
+      str_replace_all("-", "_") %>%         # standardize separators
       str_replace_all(c(
         "[Ww][tT]"     = "W",
         "[Tt][Rr][a]?" = "TR",
@@ -138,22 +144,39 @@ alldat <- alldat %>%
         "[Ww][lL]"     = "W",
         "[w]"          = "W"
       )) %>%
+      ## ensure ZONE_NUMBER format (W46 → W_46, TR34 → TR_34)
       str_replace("_(W|TR|UP)(\\d)", "_\\1_\\2") %>%
-      str_replace("(\\d+)([A-Za-z])$", "\\1_\\2") %>%
-      str_replace(  .,  "^",if_else(    is.na(Site) | str_detect(., paste0("^", Site, "_?")),
-          "",   paste0(Site, "_")   )  )) %>%
+      ## separate suffix from number (48a → 48_a)
+      str_replace("(\\d+)([A-Za-z])$", "\\1_\\2")
+  ) %>%
 
-mutate(
-    n_underscores = stringr::str_count(label, "_"),
+  ## Remove ANY site embedded in the original label
+  mutate(
+    label_core = str_remove(label, "^(CRC|OWC|PTR)_?")
+  ) %>%
+
+  ## Rebuild label using ONLY the site from site_lookup  #OWC recorded wrongly on 2023-Jan-12 instead of PTR
+  mutate(
+    label = paste0(Site, "_", label_core)
+  ) %>%
+
+  ## Standardize suffixes (only when they exist)
+  mutate(
+    n_underscores = str_count(label, "_"),
     suffix = str_extract(label, "(?<=_)[^_]+$"),
-    label = str_replace(label, "_(W|TR|UP)(\\d)", "_\\1_\\2"),
     label = if_else(
       n_underscores >= 3 & !is.na(suffix),
-      str_replace(label, paste0("_", suffix, "$"), paste0("_", tolower(suffix))),
+      str_replace(
+        label,
+        paste0("_", suffix, "$"),
+        paste0("_", tolower(suffix))
+      ),
       label
     )
   ) %>%
-  select(-n_underscores, -suffix)
+
+  ## Final cleanup
+  select(-label_core, -n_underscores, -suffix)
 
 
 
