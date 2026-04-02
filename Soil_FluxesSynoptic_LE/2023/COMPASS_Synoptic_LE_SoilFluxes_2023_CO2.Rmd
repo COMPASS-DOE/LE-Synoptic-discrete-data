@@ -1,7 +1,7 @@
 ---
 title: "COMPASS_Synoptic_LE_SoilFluxes_2023_CO2"
 author: "Roberta Peixoto "
-date: "2026-04-01"
+date: "2026-04-02"
 output: 
   html_document:
     self_contained: true
@@ -126,31 +126,88 @@ alldat <- alldat %>%
   left_join(site_lookup, by = "Date")
 
 # 4. Fixing label code problems 
-alldat <- alldat%>%filter(!label %in% c("Test2",
-                       "Up30", "Up30c", "Up27")) %>%  # bug - empty lines - flux not recorded
-  mutate(
-    label = label %>%
+alldat <- alldat %>%
+  filter(!label %in% c("Test2", "Up30", "Up30c", "Up27")) %>%
+  mutate(  label = label %>%
       str_remove_all("[sSeE]") %>%
       str_replace_all("-", "_") %>%
       str_replace_all(c(
         "[Ww][tT]"     = "W",
-        "[Tt][Rr][a]?" = "TR",  
+        "[Tt][Rr][a]?" = "TR",
         "[Uu][Pp]"     = "UP",
         "[Ww][lL]"     = "W",
-        "[w]"         = "W"
+        "[w]"          = "W"
       )) %>%
+      str_replace("_(W|TR|UP)(\\d)", "_\\1_\\2") %>%
       str_replace("(\\d+)([A-Za-z])$", "\\1_\\2") %>%
-      str_replace("([A-Z]+)_?(\\d+)_?([A-Z]{1,2})$", "\\1_\\2\\_\\3")%>%
-      str_replace(.,"^",if_else(is.na(Site) | str_detect(., paste0("^", Site, "_?")),"",paste0(Site, "_"))))
+      str_replace(  .,  "^",if_else(    is.na(Site) | str_detect(., paste0("^", Site, "_?")),
+          "",   paste0(Site, "_")   )  )) %>%
 
- 
+mutate(
+    n_underscores = stringr::str_count(label, "_"),
+    suffix = str_extract(label, "(?<=_)[^_]+$"),
+    label = str_replace(label, "_(W|TR|UP)(\\d)", "_\\1_\\2"),
+    label = if_else(
+      n_underscores >= 3 & !is.na(suffix),
+      str_replace(label, paste0("_", suffix, "$"), paste0("_", tolower(suffix))),
+      label
+    )
+  ) %>%
+  select(-n_underscores, -suffix)
+
+
+
 #I have to change labels that were recorded wrong - tracked in the field notes
 
-# OWC 11-4-2022 TR 60 -> use 60c as the others didn't have the swc probe in the soil
-# OWC 11-4-2022 W 64 -> 64 is a transition collar, it should be 65
-# OWC 09-11-2022 W 71 -> use 71b bc we did not trust first results
-# OWC 09-11-2022 W 72 -> 72b forgot the soil probe
-# OWC 09-11-2022 TR 61 -> use 61b forgot the soil probe on the 61
+# CRC 02-21-2023 TR 36 -> recorded as W but it is a TR sample
+# CRC 02-21-2023 TR 37 -> recorded as W but it is a TR sample
+# CRC 02-21-2023 TR 38 -> recorded as UP but it is a TR sample
+# CRC 02-21-2023 TR 40 -> recorded as UP but it is a TR sample
+# CRC 03-24-2023 W 48 -> recorded as TR but it is a W sample
+
+# CRC 10-06-2023 TR 37 -> recorded as UP but it is a TR sample
+# CRC 10-06-2023 TR 39 -> recorded as UP but it is a TR sample
+# CRC 10-06-2023 TR 40 -> recorded as UP but it is a TR sample
+
+# OWC 04-21-2023 TR 58 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 60 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 61 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 63 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 64 -> recorded as UP but it is a TR sample
+
+#extracting the collar number from the label
+alldat <- alldat %>%
+  mutate(
+    PlotNum = as.integer(stringr::str_extract(label, "(?<=_)\\d+(?=(_|$))"))
+  )
+
+#correcting the zone that was saved wrongly
+
+alldat <- alldat %>%
+  mutate( label = case_when(
+      # CRC 02-21-2023 — TR was saved wrongly as W
+      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(36, 37) ~
+        stringr::str_replace(label, "_W_", "_TR_"),
+
+      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(38, 40) ~
+        stringr::str_replace(label, "_UP_", "_TR_"),
+
+      # CRC 03-24-2023 — W was saved wrongly as TR
+      Site == "CRC" & Date == as.Date("2023-03-24") & PlotNum == 48 ~
+        stringr::str_replace(label, "_TR_", "_W_"),
+
+      # CRC 10-06-2023 — TR was saved wrongly as UP
+      Site == "CRC" & Date == as.Date("2023-10-06") & PlotNum %in% c(37, 39, 40) ~
+        stringr::str_replace(label, "_UP_", "_TR_"),
+      
+      # OWC 04-21-2023 — UP was saved wrongly as TR
+      Site == "OWC" & Date == as.Date("2023-04-21") & PlotNum %in% c(58, 60, 61, 63, 64) ~
+        stringr::str_replace(label, "_UP_", "_TR_"),
+
+      TRUE ~ label
+    )
+  )
+
 
 ```
 
@@ -172,8 +229,8 @@ alldat <- alldat %>%
 #this needs to be PLot ID so that later we ID plot from metadata and not the metadata row 
 
 # Path inside the zip
-zip_file <- "Raw Data_LE_2022.zip"
-csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2022.csv"
+zip_file <- "Raw Data_LE_2023.zip"
+csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
 
 # Make sure the destination folder exists
 dir.create("Raw Data", showWarnings = FALSE)
@@ -188,7 +245,7 @@ if (!file.exists(csv_inside_zip)) {
 }
 
 # Define the file path where you want to save the CSV file
-file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2022.csv"
+file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
 
 # Check if the CSV file exists
 if (file.exists(file_path)) {
@@ -222,7 +279,6 @@ if (file.exists(file_path)) {
   print("CSV file does not exist. It has been created.")
 }
 
-# line 189 :: problems with weird 1017190 second for Total time generated in the metadata for TG 01028 days: 7-7-2022,7-8-2022,7-12-2022,7-14-2022,7-19-2022,-> need to check why later, but I am fixing the timestamp at 120 sec for now
 ```
 
 ## Mark fluxes that were retaken - this is the first issue! Need to get all but last flux to be TRUE for drop - fieldnotes with explanation for flux retaken - usually weird zeros, Steven probe not inserted in the soil, or label mistake  
@@ -299,12 +355,12 @@ alldat <- alldat %>%
     by = c("SN", "metadat_row", "Plot_ID")
   )
 
-#problems with labels - there was a chamber Offset of 71 instead of 7.1 and chamber volume of 0 from the smart chamber
+#problems with labels - there was a chamber Offset of 75 instead of 5 and chamber volume of 0 from the smart chamber
 
 alldat <- alldat %>%
   mutate(
-    # Fix the Offset bug: 71 -> 7.1 and recalculating volume based on different Offsets
-    Offset_cm = if_else(Offset == 71, 7.1, Offset),
+    # Fix the Offset bug Plot_ID OWC_02-10-2023 W 67: 75 -> 5 and recalculating volume based on different Offsets
+    Offset_cm = if_else(Offset == 75, 5, Offset),
 
     # Fix chamber bug: volume should never be zero
     ChamVolume_fixed_cm3 = if_else(
@@ -331,29 +387,56 @@ alldat <- alldat %>%
 # Table of plots with custom deadband adjustments
 deadband_overrides <- tibble::tibble(
   Plot_ID = c(
-    "2022_08_16_CRC_W_43_1",
-    "2022_08_17_OWC_TR_64_1",
-    "2022_07_19_PTR_UP_1_2",
-    "2022_07_19_PTR_TR_15Mid_1",
-    "2022_07_08_CRC_W_42_1",
-    "2022_07_18_PTR_W_21_1",
-    "2022_11_04_OWC_TR_64_2",
-    "2022_07_19_PTR_TR_16Mid_1",
-    "2022_08_16_CRC_TR_38_2",
-    "2022_07_19_PTR_TR_10Mid_2"
-
+    "2023_06_29_CRC_UP_29_1",
+   "2023_05_10_OWC_TR_61_1",
+   "2023_06_22_OWC_TR_60_2",
+   "2023_06_22_OWC_TR_63_2",
+   "2023_06_29_CRC_UP_26_2",
+   "2023_06_22_OWC_TR_65_2",
+   "2023_07_13_CRC_TR_39_2",
+   "2023_01_05_OWC_TR_60_1",
+   "2023_07_13_CRC_TR_33_2",
+   "2023_06_22_OWC_TR_68_2",
+   "2023_06_22_OWC_W_69_2",
+   "2023_07_13_CRC_TR_37_2",
+   "2023_06_22_OWC_UP_55_2",
+   "2023_06_22_OWC_TR_64_2",
+   "2023_04_21_OWC_UP_58_2",
+   "2023_07_13_CRC_TR_34_3_2",
+   "2023_06_22_OWC_UP_52_1",
+   "2023_06_22_OWC_TR_60_2",
+   "2023_05_10_OWC_TR_61_1",
+   "2023_06_22_OWC_TR_58_1",
+   "2023_06_22_OWC_W_67_2",
+   "2023_06_29_CRC_TR_36_2",
+   "2023_05_10_OWC_TR_63_2",
+   "2023_01_05_OWC_TR_63_1"
   ),
   DeadBand_override = c(
-    26,
-    9,
+    5,
+    7,
+    6,
+    10,
+    8,
     12,
-    18,
-    14,
-    16,
-    16,
-    15,
+    9,
+    11,
     13,
-    10
+    7,
+    10,
+    11,
+    9,
+    9,
+    10,
+    9,
+    8,
+    11,
+    14,
+    8,
+    11,
+    11,
+    16,
+    12
     
   )
 )
@@ -438,7 +521,7 @@ drop_neg_CO2 <- alldf %>%
   select(Plot_ID, TIMESTAMP_min, TIMESTAMP_max) %>%
   mutate(drop_CO2 = TRUE)
 
-saveRDS(drop_neg_CO2, "drop_neg_CO2_2022.rds")
+saveRDS(drop_neg_CO2, "drop_neg_CO2_2023.rds")
 
 ```
 
@@ -479,20 +562,9 @@ tails <- rbind(fluxes_low, fluxes_high)
 
 #### If something is in a V shape should we take the second part to make a positive linear curve?
 
-# Plots selected for QA/QC of deadband behavior
-tobechecked <- c(
-  "2022_08_16_CRC_W_43_1",
-    "2022_08_17_OWC_TR_64_1",
-    "2022_07_19_PTR_UP_1_2",
-    "2022_07_19_PTR_TR_15Mid_1",
-    "2022_07_08_CRC_W_42_1",
-    "2022_07_18_PTR_W_21_1",
-    "2022_11_04_OWC_TR_64_2"
-)
-
 # Subset data and create relative time (seconds since flux start)
 r_all <- alldat %>%
-  filter(Plot_ID %in% tobechecked) %>%
+  filter(Plot_ID %in% deadband_overrides$Plot_ID) %>%
   group_by(Plot_ID) %>%
   mutate(
     time_sec = as.numeric(
@@ -501,9 +573,16 @@ r_all <- alldat %>%
   ) %>%
   ungroup()
 
-# Plot data highlighting points used vs discarded by deadband
+
+# Random sample of plots for visualization
+plots_sample <- sample(unique(r_all$Plot_ID), 2,replace = FALSE)
+
+r_plot <- r_all %>%
+  filter(Plot_ID %in% plots_sample)
+
+# Plot
 ggplot(
-  r_all,
+  r_plot,
   aes(
     x = TIMESTAMP,
     y = co2,
@@ -511,10 +590,9 @@ ggplot(
   )
 ) +
   geom_point(size = 1.8) +
-  facet_wrap(~ Plot_ID, scales = "free", ncol = 3) +
+  facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +
   scale_color_manual(
     values = c("grey60", "red"),
-    name = "Used to adjust",
     labels = c("Discarded (deadband)", "Used after deadband")
   ) +
   theme_classic() +
@@ -660,21 +738,20 @@ for(P in all_sample){
 ## Remove any fluxes that do not fit criteria 
 ```{r, echo=FALSE}
 
-# Create a new dataframe by removing rows that were present in fluxes_weird (11 obs)
+# Create a new dataframe by removing rows that were present in fluxes_weird (8 obs)
 #allflux_filtered <- allflux[!(allflux$Plot_ID %in% fluxes_weird$Plot_ID), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad
 
 #Any others that are not in the weird category that need to be removed: 
   #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
 
-allflux_filtered <- allflux %>%
-  filter(!Plot_ID %in% c("2022_09_23_PTR_TR_9_1", #leak 
-                         "2022_07_07_PTR_TR_9_1", #leak
-                         "2022_07_08_CRC_TR_36_1" #plateau + sharp increase - soil disturbed during measurement?
-                      ))
+# allflux_filtered <- allflux %>%
+#   filter(!Plot_ID %in% c("", #leak 
+#                          ""  #plateau + sharp increase - soil disturbed during measurement?
+#                       ))
 
 
 # View the result
-head(allflux_filtered)
+# head(allflux_filtered)
 
 
 ```
@@ -683,7 +760,7 @@ head(allflux_filtered)
 ## Do some visualization of QAQC plots to assess fluxes  
 ```{r, echo=FALSE}
 
-p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)) +
+p1 <- ggplot(allflux, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   labs(title = "A") + 
@@ -697,7 +774,7 @@ p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color =
         aspect.ratio = 1)
 p1
 
-p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
+p2 <- ggplot(allflux, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   xlim(0,1) + ylim(0,1) +
@@ -712,7 +789,7 @@ p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot_I
         aspect.ratio = 1)
 p2
 
-p3 <- ggplot(allflux_filtered, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+p3 <- ggplot(allflux, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   #xlim(0,50) + #ylim(0,50) +
@@ -734,7 +811,7 @@ p3
 ## Read out final dataframe and export for use elsewhere 
 ```{r, echo=FALSE}
 
-allflux_filtered_renamed <- allflux_filtered %>%
+allflux_filtered_renamed <- allflux %>%
     separate(
     Plot_ID,
     into = c("Year", "Month_num", "Day", "Site", "Zone", "Rest"),
@@ -762,7 +839,7 @@ allflux_filtered_renamed <- allflux_filtered %>%
 
 
 #export as a csv to the folder that you want 
-write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2022_CO2.csv", row.names = FALSE) 
+write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2023_CO2.csv", row.names = FALSE) 
 #Change file name
 
 

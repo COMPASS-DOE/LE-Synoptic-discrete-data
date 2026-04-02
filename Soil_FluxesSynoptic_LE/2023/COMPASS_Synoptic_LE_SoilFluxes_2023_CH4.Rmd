@@ -1,7 +1,7 @@
 ---
-title: "COMPASS_Synoptic_LE_SoilFluxes_2022_CH4"
+title: "COMPASS_Synoptic_LE_SoilFluxes_2023_CH4"
 author: "Roberta Peixoto "
-date: "2026-04-01"
+date: "2026-04-02"
 output: 
   html_document:
     self_contained: true
@@ -51,14 +51,14 @@ library(stringr)
 tmp_dir <- tempdir()
 
 # Get list of files inside the zip
-zip_contents <- unzip("Raw Data_LE_2022.zip", list = TRUE)
+zip_contents <- unzip("Raw Data_LE_2023.zip", list = TRUE)
 
 # Keep only JSON files
 json_files <- zip_contents$Name[grepl("json$", zip_contents$Name, ignore.case = TRUE)]
 
 # Extract only the JSON files
 unzip(
-  "Raw Data_LE_2022.zip",
+  "Raw Data_LE_2023.zip",
   files = json_files,
   exdir = tmp_dir
 )
@@ -80,7 +80,7 @@ alldat1 <- lapply(file.list, ffi_read_LIsmartchamber)
 alldat <- data.table::rbindlist(alldat1, fill = TRUE)
 
 
-## Noticed that the site names were recorded in the file name and not in the flux label for 2022 
+## Noticed that the site names were recorded in the file name and not in the flux label for 2023 
 ## dealing with it in the next chunk 
 
 
@@ -92,30 +92,31 @@ alldat <- data.table::rbindlist(alldat1, fill = TRUE)
 # 1. Table describing the days we have visited each site
 site_lookup <- tibble::tribble(
   ~Date,         ~Site,
-  "2022-07-07",  "PTR",
-  "2022-07-08",  "CRC",
-  "2022-07-12",  "CRC",
-  "2022-07-14",  "OWC",
-  "2022-07-18",  "PTR",
-  "2022-07-19",  "PTR",
-  "2022-07-20",  "CRC",
-  "2022-07-21",  "OWC",
-  "2022-08-16",  "CRC",
-  "2022-08-17",  "OWC",
-  "2022-08-18",  "PTR",
-  "2022-08-30",  "MSM",
-  "2022-09-16",  "CRC",
-  "2022-09-23",  "PTR",
-  "2022-09-30",  "OWC",
-  "2022-10-05",  "OWC",
-  "2022-10-07",  "PTR",
-  "2022-10-14",  "CRC",
-  "2022-10-21",  "OWC",
-  "2022-11-04",  "OWC",
-  "2022-11-07",  "CRC",
-  "2022-11-08",  "PTR",
-  "2022-11-18",  "CRC",
-  "2022-12-20",  "OWC"
+  "2023-01-20",  "CRC",
+  "2023-02-21",  "CRC",
+  "2023-03-24",  "CRC",
+  "2023-04-14",  "CRC",
+  "2023-05-30",  "CRC",
+  "2023-06-29",  "CRC",
+  "2023-07-13",  "CRC",
+  "2023-08-03",  "CRC",
+  "2023-09-01",  "CRC",
+  "2023-10-06",  "CRC",
+  "2023-01-05",  "OWC",
+  "2023-02-10",  "OWC",
+  "2023-03-28",  "OWC",
+  "2023-04-21",  "OWC",
+  "2023-05-10",  "OWC",
+  "2023-06-22",  "OWC",
+  "2023-07-25",  "OWC",
+  "2023-08-10",  "OWC",
+  "2023-09-08",  "OWC",
+  "2023-10-20",  "OWC",
+  "2023-01-12",  "PTR",
+  "2023-02-24",  "PTR",
+  "2023-07-26",  "PTR",
+  "2023-08-17",  "PTR",
+  "2023-10-11",  "PTR"
 ) %>%
   mutate(Date = as.Date(Date))
 
@@ -125,29 +126,87 @@ alldat <- alldat %>%
   left_join(site_lookup, by = "Date")
 
 # 4. Fixing label code problems 
-alldat <- alldat%>%filter(!label %in% c("UpDemonstration",
-                       "WeS22Demonstration")) %>%
-  mutate(
-    label = label %>%
+alldat <- alldat %>%
+  filter(!label %in% c("Test2", "Up30", "Up30c", "Up27")) %>%
+  mutate(  label = label %>%
       str_remove_all("[sSeE]") %>%
+      str_replace_all("-", "_") %>%
       str_replace_all(c(
         "[Ww][tT]"     = "W",
-        "[Tt][Rr][a]?" = "TR",  
+        "[Tt][Rr][a]?" = "TR",
         "[Uu][Pp]"     = "UP",
-        "[Ww][lL]"     = "W"
+        "[Ww][lL]"     = "W",
+        "[w]"          = "W"
       )) %>%
+      str_replace("_(W|TR|UP)(\\d)", "_\\1_\\2") %>%
       str_replace("(\\d+)([A-Za-z])$", "\\1_\\2") %>%
-      str_replace("([A-Z]+)(\\d+)", "\\1_\\2") %>%
-      str_c(Site, ., sep = "_")
-  )
- 
+      str_replace(  .,  "^",if_else(    is.na(Site) | str_detect(., paste0("^", Site, "_?")),
+          "",   paste0(Site, "_")   )  )) %>%
+
+mutate(
+    n_underscores = stringr::str_count(label, "_"),
+    suffix = str_extract(label, "(?<=_)[^_]+$"),
+    label = str_replace(label, "_(W|TR|UP)(\\d)", "_\\1_\\2"),
+    label = if_else(
+      n_underscores >= 3 & !is.na(suffix),
+      str_replace(label, paste0("_", suffix, "$"), paste0("_", tolower(suffix))),
+      label
+    )
+  ) %>%
+  select(-n_underscores, -suffix)
+
+
+
 #I have to change labels that were recorded wrong - tracked in the field notes
 
-# OWC 11-4-2022 TR 60 -> use 60c as the others didn't have the swc probe in the soil
-# OWC 11-4-2022 W 64 -> 64 is a transition collar, it should be 65
-# OWC 09-11-2022 W 71 -> use 71b bc we did not trust first results
-# OWC 09-11-2022 W 72 -> 72b forgot the soil probe
-# OWC 09-11-2022 TR 61 -> use 61b forgot the soil probe on the 61
+# CRC 02-21-2023 TR 36 -> recorded as W but it is a TR sample
+# CRC 02-21-2023 TR 37 -> recorded as W but it is a TR sample
+# CRC 02-21-2023 TR 38 -> recorded as UP but it is a TR sample
+# CRC 02-21-2023 TR 40 -> recorded as UP but it is a TR sample
+# CRC 03-24-2023 W 48 -> recorded as TR but it is a W sample
+
+# CRC 10-06-2023 TR 37 -> recorded as UP but it is a TR sample
+# CRC 10-06-2023 TR 39 -> recorded as UP but it is a TR sample
+# CRC 10-06-2023 TR 40 -> recorded as UP but it is a TR sample
+
+# OWC 04-21-2023 TR 58 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 60 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 61 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 63 -> recorded as UP but it is a TR sample
+# OWC 04-21-2023 TR 64 -> recorded as UP but it is a TR sample
+
+#extracting the collar number from the label
+alldat <- alldat %>%
+  mutate(
+    PlotNum = as.integer(stringr::str_extract(label, "(?<=_)\\d+(?=(_|$))"))
+  )
+
+#correcting the zone that was saved wrongly
+
+alldat <- alldat %>%
+  mutate( label = case_when(
+      # CRC 02-21-2023 — TR was saved wrongly as W
+      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(36, 37) ~
+        stringr::str_replace(label, "_W_", "_TR_"),
+
+      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(38, 40) ~
+        stringr::str_replace(label, "_UP_", "_TR_"),
+
+      # CRC 03-24-2023 — W was saved wrongly as TR
+      Site == "CRC" & Date == as.Date("2023-03-24") & PlotNum == 48 ~
+        stringr::str_replace(label, "_TR_", "_W_"),
+
+      # CRC 10-06-2023 — TR was saved wrongly as UP
+      Site == "CRC" & Date == as.Date("2023-10-06") & PlotNum %in% c(37, 39, 40) ~
+        stringr::str_replace(label, "_UP_", "_TR_"),
+      
+      # OWC 04-21-2023 — UP was saved wrongly as TR
+      Site == "OWC" & Date == as.Date("2023-04-21") & PlotNum %in% c(58, 60, 61, 63, 64) ~
+        stringr::str_replace(label, "_UP_", "_TR_"),
+
+      TRUE ~ label
+    )
+  )
 
 ```
 
@@ -158,16 +217,19 @@ alldat <- alldat%>%filter(!label %in% c("UpDemonstration",
         #because if you do then all the data for each one will have a plot and you won't be able to change start times
 
 #create unique Plot ID for each measurement: 
+#detach("package:data.table", unload=TRUE)
 
-alldat <- alldat %>% 
-  mutate(Date_str = format(as.Date(TIMESTAMP), "%Y_%m_%d"),
-         Plot_ID = str_c(Date_str, label, RepNum, sep = "_"))  
+# I am changing this from a month_ID to a date_ID as I have more than one day per month
+alldat <- alldat %>%
+  mutate(
+    Date_str = format(as.Date(TIMESTAMP), "%Y_%m_%d"),
+    Plot_ID = str_c(Date_str, label, RepNum, sep = "_")  )
 
-#this needs to be Plot ID so that later we ID plot from metadata and not the metadata row 
+#this needs to be PLot ID so that later we ID plot from metadata and not the metadata row 
 
 # Path inside the zip
-zip_file <- "Raw Data_LE_2022.zip"
-csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2022.csv"
+zip_file <- "Raw Data_LE_2023.zip"
+csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
 
 # Make sure the destination folder exists
 dir.create("Raw Data", showWarnings = FALSE)
@@ -182,7 +244,7 @@ if (!file.exists(csv_inside_zip)) {
 }
 
 # Define the file path where you want to save the CSV file
-file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2022.csv"
+file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
 
 # Check if the CSV file exists
 if (file.exists(file_path)) {
@@ -215,8 +277,6 @@ if (file.exists(file_path)) {
   
   print("CSV file does not exist. It has been created.")
 }
-
-# line 189 :: problems with weird 1017190 second for Total time generated in the metadata for TG 01028 days: 7-7-2022,7-8-2022,7-12-2022,7-14-2022,7-19-2022,-> need to check why later, but I am fixing the timestamp at 120 sec for now
 ```
 
 ## Mark fluxes that were retaken - this is the first issue! Need to get all but last flux to be TRUE for drop - fieldnotes with explanation for flux retaken - usually weird zeros, Steven probe not inserted in the soil, or label mistake  
@@ -255,9 +315,7 @@ metadata_filtered <- metadata_filtered %>%
     drop = letter_order < max(letter_order, na.rm = TRUE)
   ) %>%
   ungroup()
-
-
-
+ 
 ```
 
 ##Dont need to pull L1 temp data or any other temps like we do for macrophyte because the smartchamber records the temp
@@ -294,14 +352,14 @@ alldat <- alldat %>%
     by = c("SN", "metadat_row", "Plot_ID")
   )
 
-#problems with labels - there was a chamber Offset of 71 instead of 7.1 and chamber volume of 0 from the smart chamber
+#problems with labels - there was a chamber Offset of 75 instead of 5 and chamber volume of 0 from the smart chamber
 
 alldat <- alldat %>%
   mutate(
-    # Fix the Offset bug: 71 -> 7.1 and recalculating volume based on different Offsets
-    Offset_cm = if_else(Offset == 71, 7.1, Offset),
+    # Fix the Offset bug Plot_ID OWC_02-10-2023 W 67: 75 -> 5 and recalculating volume based on different Offsets
+    Offset_cm = if_else(Offset == 75, 5, Offset),
 
-    # Fix chamber volume when it is zero
+    # Fix chamber bug: volume should never be zero
     ChamVolume_fixed_cm3 = if_else(
       ChamVolume == 0,
       4244.1,
@@ -325,106 +383,57 @@ alldat <- alldat %>%
 # Table of plots with custom deadband adjustments
 deadband_overrides <- tibble::tibble(
   Plot_ID = c(
-    "2022_08_16_CRC_W_43_1",
-    "2022_08_17_OWC_TR_64_1",
-    "2022_07_19_PTR_UP_1_2",
-    "2022_07_19_PTR_TR_15Mid_1",
-     "2022_07_19_PTR_UP_8Mid2_2",
-    "2022_11_08_PTR_W_luci_vg2_1",
-    "2022_10_05_OWC_W_66_2",
-    "2022_10_05_OWC_W_65_1",
-    "2022_08_17_OWC_W_68_c_1",
-    "2022_07_08_CRC_UP_27_1",
-    "2022_07_07_PTR_UP_1_1",
-    "2022_07_21_OWC_TR_63_2",
-    "2022_07_20_CRC_W_46_b_2",
-    "2022_07_19_PTR_TR_16Mid2_2",
-    "2022_09_23_PTR_TR_11_1",
-    "2022_07_20_CRC_W_45_1",
-    "2022_07_19_PTR_UP_1Mid_2",
-    "2022_08_16_CRC_W_41_2",
-    "2022_08_17_OWC_W_66_2",
-    "2022_10_14_CRC_W_43_1",
-    "2022_07_08_CRC_TR_35_1",
-    "2022_07_12_CRC_TR_37_2",
-    "2022_07_07_PTR_W_24_1",
-    "2022_07_08_CRC_W_41_1",
-    "2022_07_20_CRC_TR_37_1",
-    "2022_07_18_PTR_UP_20_c_2",
-    "2022_07_20_CRC_UP_26_1",
-    "2022_07_20_CRC_UP_29_2",
-    "2022_07_08_CRC_TR_37_2",
-    "2022_07_20_CRC_UP_32_1",
-    "2022_07_18_PTR_UP_01_b_2",
-    "2022_07_08_CRC_W_43_2",
-    "2022_07_08_CRC_W_43_1",
-    "2022_10_05_OWC_W_66_1", #GOOD LINEAR FLAT LINE - NO - FLUX 
-     "2022_09_30_OWC_W_65_1",
-    "2022_07_20_CRC_UP_29_2",
-    "2022_07_07_PTR_W_22_1",
-    "2022_07_20_CRC_TR_37_1",
-    "2022_07_19_PTR_TR_16Mid_1",
-    "2022_07_07_PTR_UP_2_2",
-    "2022_08_18_PTR_UP_01_b_2",
-    "2022_07_20_CRC_UP_26_1",
-    "2022_07_18_PTR_TR_10_2",
-    "2022_07_20_CRC_UP_29_2",
-    "2022_07_19_PTR_TR_16Mid2_2",
-    "2022_11_08_PTR_W_luci_NoVg2_1",
-    "2022_11_08_PTR_W_luci_NoVg1_2",
-    "2022_09_30_OWC_W_66_2"
-    ),
-  
-  
+    "2023_06_29_CRC_UP_29_1",
+   "2023_05_10_OWC_TR_61_1",
+   "2023_06_22_OWC_TR_60_2",
+   "2023_06_22_OWC_TR_63_2",
+   "2023_06_29_CRC_UP_26_2",
+   "2023_06_22_OWC_TR_65_2",
+   "2023_07_13_CRC_TR_39_2",
+   "2023_01_05_OWC_TR_60_1",
+   "2023_07_13_CRC_TR_33_2",
+   "2023_06_22_OWC_TR_68_2",
+   "2023_06_22_OWC_W_69_2",
+   "2023_07_13_CRC_TR_37_2",
+   "2023_06_22_OWC_UP_55_2",
+   "2023_06_22_OWC_TR_64_2",
+   "2023_04_21_OWC_UP_58_2",
+   "2023_07_13_CRC_TR_34_3_2",
+   "2023_06_22_OWC_UP_52_1",
+   "2023_06_22_OWC_TR_60_2",
+   "2023_05_10_OWC_TR_61_1",
+   "2023_06_22_OWC_TR_58_1",
+   "2023_06_22_OWC_W_67_2",
+   "2023_06_29_CRC_TR_36_2",
+   "2023_05_10_OWC_TR_63_2",
+   "2023_01_05_OWC_TR_63_1"
+  ),
   DeadBand_override = c(
-    26,
-    9,
-    12,
-    18,
-    10,
-    24,
-    18,
-    13,
-    10,
-    10,
-    11,
-    10,
-    12,
-    8,
+    5,
+    7,
+    6,
     10,
     8,
-    11,
-    10,
-    13,
-    15,
-    14,
     12,
+    9,
+    11,
+    13,
+    7,
+    10,
+    11,
+    9,
+    9,
+    10,
+    9,
+    8,
+    11,
+    14,
+    8,
+    11,
+    11,
     16,
-    18,
-    16,
-    14,
-    12,
-    11,
-    13,
-    15,
-    11,
-    9,
-    9,
-    14,
-    26,
-    17,
-    10,
-    15,
-    10,
-    11,
-    11,
-    13,
-    10,
-    10,
-    13,
-    9,
-    14,
     12
+    
   )
 )
 
@@ -496,7 +505,7 @@ soildat <- alldat %>%
 alldf <- left_join(fluxes, soildat, by = "Plot_ID")
 
 #reading the list of negative CO2 flux 
-drop_neg_CO2 <- readRDS("drop_neg_CO2_2022.rds")%>%
+drop_neg_CO2 <- readRDS("drop_neg_CO2_2023.rds")%>%
   dplyr::select(Plot_ID,drop_CO2)
 
 alldf <- alldf %>%
@@ -515,7 +524,7 @@ allflux <-alldf%>%filter(drop_CO2!=TRUE)
 
 #take a look at the fluxes we calculated with R2 
 ggplot(allflux, aes(Plot_ID, lin_flux.estimate, color = lin_r.squared)) +
-  geom_point(size=4) + theme_classic() + ylim(-50,2000) + 
+  geom_point(size=4) + theme_classic() + #ylim(-50,2000) + 
   geom_linerange(aes(ymin = lin_flux.estimate- lin_flux.std.error,
                    ymax = lin_flux.estimate+ lin_flux.std.error)) +
   scale_color_gradientn(colours = c("darkred",  "red", "white","lightblue", "darkblue"),
@@ -650,7 +659,7 @@ bad_plots <- unique(fluxes_weird$Plot_ID)
 
 # take a random sample (FALSE so we don't get the same plot twice)
 # set.seed(...) to guarantee reproducibility
-bad_sample <- sample(bad_plots, 5, replace=FALSE)
+bad_sample <- sample(bad_plots, 2, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in bad_sample){ 
