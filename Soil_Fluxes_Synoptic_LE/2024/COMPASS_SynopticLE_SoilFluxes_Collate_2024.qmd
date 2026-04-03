@@ -1,5 +1,5 @@
 ---
-title: "Synoptic LE: Soil Fluxes 2023"
+title: "Synoptic LE: Soil Fluxes 2024"
 author: "Roberta Peixoto"
 date: "`r Sys.Date()`"
 output: 
@@ -25,8 +25,9 @@ library(lubridate)
 
 ```{r, include = FALSE}
 
+library(here)
 
-ch4 <- read.csv("Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2023_CH4.csv")
+ch4 <- read.csv("Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CH4.csv")
 
 
 ch4 <- ch4%>% 
@@ -48,7 +49,7 @@ ch4 <- ch4%>%
 
 ch4$TIMESTAMP <- ymd_hms(ch4$TIMESTAMP)
 
-co2 <- read.csv("Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2023_CO2.csv")
+co2 <-read.csv("Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CO2.csv")
 
 co2 <- co2%>% 
   mutate(
@@ -92,7 +93,7 @@ final_dat <- all_dat %>%
 ```{r write out combined data and metadata, include=FALSE}
 
 #write out a csv of all the data to the main folder: 
-write.csv(final_dat, "COMPASS_SynopticLE_Soil_Fluxes_2023.csv", row.names = FALSE)
+write.csv(final_dat, "COMPASS_SynopticLE_Soil_Fluxes_2024.csv", row.names = FALSE)
 
 ```
 

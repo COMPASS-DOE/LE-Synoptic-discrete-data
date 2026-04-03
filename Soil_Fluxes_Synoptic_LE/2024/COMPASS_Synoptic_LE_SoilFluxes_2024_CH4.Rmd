@@ -1,7 +1,7 @@
 ---
-title: "COMPASS_Synoptic_LE_SoilFluxes_2023_CH4"
+title: "COMPASS_Synoptic_LE_SoilFluxes_2024_CH4"
 author: "Roberta Peixoto "
-date: "2026-04-02"
+date: "2026-04-03"
 output: 
   html_document:
     self_contained: true
@@ -47,76 +47,120 @@ library(stringr)
 ## Pull in Smart Chamber Files from the Raw Data folder
 ```{r message=FALSE, warning = FALSE, results ='hide'}
 
-# Create a temporary directory
-tmp_dir <- tempdir()
+library(data.table)
 
-# Get list of files inside the zip
-zip_contents <- unzip("Raw Data_LE_2023.zip", list = TRUE)
 
-# Keep only JSON files
-json_files <- zip_contents$Name[grepl("json$", zip_contents$Name, ignore.case = TRUE)]
+zip_path <- "C:/Github/LE-Synoptic-discrete-data/Soil_Fluxes_Synoptic_LE/2024/Raw Data_LE_2024.zip"
 
-# Extract only the JSON files
+stopifnot(file.exists(zip_path))
+
+out_dir <- "Soil_Fluxes_Synoptic_LE/2024/extracted_files"
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+
+zip_contents <- unzip(zip_path, list = TRUE)
+
+json_in_zip <- zip_contents$Name[grepl("\\.json$", zip_contents$Name, ignore.case = TRUE)]
+txt_in_zip  <- zip_contents$Name[grepl("\\.txt$",  zip_contents$Name, ignore.case = TRUE)]
+
 unzip(
-  "Raw Data_LE_2023.zip",
-  files = json_files,
-  exdir = tmp_dir
+    zip_path,
+    files = c(json_in_zip, txt_in_zip),
+    exdir = out_dir
 )
 
-# List extracted JSON files (full paths)
-file.list <- list.files(
-  path = tmp_dir,
-  pattern = "json$",
-  full.names = TRUE,
-  recursive = TRUE
+json_files <- list.files(
+    out_dir,
+    pattern = "\\.json$",
+    full.names = TRUE,
+    recursive = TRUE
 )
 
-head(file.list)
+txt_files <- list.files(
+    out_dir,
+    pattern = "\\.txt$",
+    full.names = TRUE,
+    recursive = TRUE
+)
 
-# Read in the data
-alldat1 <- lapply(file.list, ffi_read_LIsmartchamber)
+bad_json <- character()
 
-# Combine into one data.table
-alldat <- data.table::rbindlist(alldat1, fill = TRUE)
+json_data <- lapply(
+    json_files,
+    function(f) {
+        tryCatch(
+            ffi_read_LIsmartchamber(f),
+            error = function(e) {
+                bad_json <<- c(bad_json, f)
+                return(NULL)
+            }
+        )
+    }
+)
 
+json_data <- json_data[!sapply(json_data, is.null)]
 
-## Noticed that the site names were recorded in the file name and not in the flux label for 2023 
-## dealing with it in the next chunk 
+bad_txt <- character()
 
+txt_data <- lapply(
+    txt_files,
+    function(f) {
+        tryCatch(
+            fread(f),   
+            error = function(e) {
+                bad_txt <<- c(bad_txt, f)
+                return(NULL)
+            }
+        )
+    }
+)
+
+txt_data <- txt_data[!sapply(txt_data, is.null)]
+
+if (length(bad_json) > 0) {
+    warning(
+        paste(
+            "JSON files ignored due to read errors:\n",
+            paste(basename(bad_json), collapse = "\n")
+        ),
+        call. = FALSE
+    )
+}
+
+if (length(bad_txt) > 0) {
+    warning(
+        paste(
+            "TXT files ignored due to read errors:\n",
+            paste(basename(bad_txt), collapse = "\n")
+        ),
+        call. = FALSE
+    )
+}
+
+alldat <- rbindlist(
+    c(json_data, txt_data),
+    fill = TRUE
+)
+
+#fwrite(alldat, "Soil_Fluxes_LE_2024_all_sources_raw.csv")
 
 
 ```
 
 ## Unfortunatly - we had many problems with labels - we need to include the sites in the Plot_ID
 ```{r}
-# Table describing the days we have visited each site
 site_lookup <- tibble::tribble(
   ~Date,         ~Site,
-  "2023-01-20",  "CRC",
-  "2023-02-21",  "CRC",
-  "2023-03-24",  "CRC",
-  "2023-04-14",  "CRC",
-  "2023-05-30",  "CRC",
-  "2023-06-29",  "CRC",
-  "2023-07-13",  "CRC",
-  "2023-08-03",  "CRC",
-  "2023-09-01",  "CRC",
-  "2023-10-06",  "CRC",
-  "2023-01-05",  "OWC",
-  "2023-02-10",  "OWC",
-  "2023-03-28",  "OWC",
-  "2023-04-21",  "OWC",
-  "2023-05-10",  "OWC",
-  "2023-06-22",  "OWC",
-  "2023-07-25",  "OWC",
-  "2023-08-10",  "OWC",
-  "2023-09-08",  "OWC",
-  "2023-10-20",  "OWC",
-  "2023-01-12",  "PTR",
-  "2023-02-24",  "PTR",
-  "2023-07-26",  "PTR",
-  "2023-08-17",  "PTR",
-  "2023-10-11",  "PTR"
+  "2024-02-02",  "CRC",
+  "2024-04-26",  "CRC",
+  "2024-07-30",  "CRC",
+  "2024-10-29",  "CRC",
+  "2024-02-23",  "OWC",
+  "2024-04-19",  "OWC",
+  "2024-07-31",  "OWC",
+  "2024-10-18",  "OWC",
+  "2024-02-13",  "PTR",
+  "2024-08-07",  "PTR",
+  "2024-10-22",  "PTR"
 ) %>%
   mutate(Date = as.Date(Date))
 
@@ -125,11 +169,12 @@ alldat <- alldat %>%
   mutate(Date = as.Date(TIMESTAMP))%>%
   left_join(site_lookup, by = "Date")
 
+
 # Fixing label code problems 
 alldat <- alldat %>%
   
   ## Remove known invalid labels
-  filter(!label %in% c("Test2", "Up30", "Up30c", "Up27")) %>%
+  #filter(!label %in% c("")) %>%
 
   ## Normalize the raw label (do NOT trust embedded site)
   mutate(
@@ -177,56 +222,18 @@ alldat <- alldat %>%
   ## Final cleanup
   select(-label_core, -n_underscores, -suffix)
 
+# removing some labels with NA reflecting no data recorded in these file
+# "CRC_TR_48"
+# "NA_TR_48"
+# "CRC_W_48"
+# "NA_UP_25_a"
+# "NA_UP_30"        
+# "NA_UP_29"    
+# "NA_NA"  
+alldat<-alldat[
+    !is.na(label) & !grepl("^NA_", label)]
+
 #I have to change labels that were recorded wrong - tracked in the field notes
-
-# CRC 02-21-2023 TR 36 -> recorded as W but it is a TR sample
-# CRC 02-21-2023 TR 37 -> recorded as W but it is a TR sample
-# CRC 02-21-2023 TR 38 -> recorded as UP but it is a TR sample
-# CRC 02-21-2023 TR 40 -> recorded as UP but it is a TR sample
-# CRC 03-24-2023 W 48 -> recorded as TR but it is a W sample
-
-# CRC 10-06-2023 TR 37 -> recorded as UP but it is a TR sample
-# CRC 10-06-2023 TR 39 -> recorded as UP but it is a TR sample
-# CRC 10-06-2023 TR 40 -> recorded as UP but it is a TR sample
-
-# OWC 04-21-2023 TR 58 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 60 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 61 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 63 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 64 -> recorded as UP but it is a TR sample
-
-#extracting the collar number from the label
-alldat <- alldat %>%
-  mutate(
-    PlotNum = as.integer(stringr::str_extract(label, "(?<=_)\\d+(?=(_|$))"))
-  )
-
-#correcting the zone that was saved wrongly
-
-alldat <- alldat %>%
-  mutate( label = case_when(
-      # CRC 02-21-2023 — TR was saved wrongly as W
-      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(36, 37) ~
-        stringr::str_replace(label, "_W_", "_TR_"),
-
-      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(38, 40) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
-
-      # CRC 03-24-2023 — W was saved wrongly as TR
-      Site == "CRC" & Date == as.Date("2023-03-24") & PlotNum == 48 ~
-        stringr::str_replace(label, "_TR_", "_W_"),
-
-      # CRC 10-06-2023 — TR was saved wrongly as UP
-      Site == "CRC" & Date == as.Date("2023-10-06") & PlotNum %in% c(37, 39, 40) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
-      
-      # OWC 04-21-2023 — UP was saved wrongly as TR
-      Site == "OWC" & Date == as.Date("2023-04-21") & PlotNum %in% c(58, 60, 61, 63, 64) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
-
-      TRUE ~ label
-    )
-  )
 
 ```
 
@@ -248,8 +255,8 @@ alldat <- alldat %>%
 #this needs to be PLot ID so that later we ID plot from metadata and not the metadata row 
 
 # Path inside the zip
-zip_file <- "Raw Data_LE_2023.zip"
-csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
+zip_file <- "Raw Data_LE_2024.zip"
+csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2024.csv"
 
 # Make sure the destination folder exists
 dir.create("Raw Data", showWarnings = FALSE)
@@ -264,7 +271,7 @@ if (!file.exists(csv_inside_zip)) {
 }
 
 # Define the file path where you want to save the CSV file
-file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
+file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2024.csv"
 
 # Check if the CSV file exists
 if (file.exists(file_path)) {
@@ -403,56 +410,58 @@ alldat <- alldat %>%
 # Table of plots with custom deadband adjustments
 deadband_overrides <- tibble::tibble(
   Plot_ID = c(
-    "2023_06_29_CRC_UP_29_1",
-   "2023_05_10_OWC_TR_61_1",
-   "2023_06_22_OWC_TR_60_2",
-   "2023_06_22_OWC_TR_63_2",
-   "2023_06_29_CRC_UP_26_2",
-   "2023_06_22_OWC_TR_65_2",
-   "2023_07_13_CRC_TR_39_2",
-   "2023_01_05_OWC_TR_60_1",
-   "2023_07_13_CRC_TR_33_2",
-   "2023_06_22_OWC_TR_68_2",
-   "2023_06_22_OWC_W_69_2",
-   "2023_07_13_CRC_TR_37_2",
-   "2023_06_22_OWC_UP_55_2",
-   "2023_06_22_OWC_TR_64_2",
-   "2023_04_21_OWC_UP_58_2",
-   "2023_07_13_CRC_TR_34_3_2",
-   "2023_06_22_OWC_UP_52_1",
-   "2023_06_22_OWC_TR_60_2",
-   "2023_05_10_OWC_TR_61_1",
-   "2023_06_22_OWC_TR_58_1",
-   "2023_06_22_OWC_W_67_2",
-   "2023_06_29_CRC_TR_36_2",
-   "2023_05_10_OWC_TR_63_2",
-   "2023_01_05_OWC_TR_63_1"
-  ),
+   "2024_07_31_OWC_UP_51_2",
+   "2024_08_07_PTR_W_22_2",
+   "2024_07_31_OWC_UP_53_2",
+   "2024_08_07_PTR_UP_8_1",
+   "2024_07_31_OWC_W_72_2",
+   "2024_07_31_OWC_W_68_2",
+   "2024_07_31_OWC_W_72_1",
+   "2024_07_31_OWC_TR_63_2",
+   "2024_08_07_PTR_W_18_2",
+   "2024_07_31_OWC_UP_52_2",
+   "2024_07_31_OWC_W_65_2",
+   "2024_07_31_OWC_TR_64_1",
+   "2024_07_31_OWC_UP_53_1",
+   "2024_02_02_CRC_TR_39_2",
+   "2024_07_31_OWC_TR_61_1",
+   "2024_07_31_OWC_TR_61_2",
+   "2024_07_31_OWC_UP_51_2",
+   "2024_08_07_PTR_W_22_1",
+   "2024_07_31_OWC_UP_53_2",
+   "2024_08_07_PTR_UP_8_1",
+   "2024_07_31_OWC_W_72_2",
+   "2024_07_31_OWC_TR_63_2",
+   "2024_08_07_PTR_W_18_2",
+   "2024_07_31_OWC_UP_52_2",
+   "2024_07_31_OWC_W_65_2"
+     ),
   DeadBand_override = c(
-    5,
-    7,
-    6,
-    10,
-    8,
     12,
-    9,
-    11,
+    10,
     13,
-    7,
     10,
-    11,
-    9,
-    9,
-    10,
-    9,
-    8,
-    11,
+    18,
+    13,
+    18,
     14,
     8,
+    8,
+    10,
+    18,
+    8,
+    9,
+    9,
+    20,
+    12,
+    10,
+    13,
+    10,
     11,
-    11,
-    16,
-    12
+    15,
+    8,
+    8,
+    10
     
   )
 )
@@ -525,7 +534,7 @@ soildat <- alldat %>%
 alldf <- left_join(fluxes, soildat, by = "Plot_ID")
 
 #reading the list of negative CO2 flux 
-drop_neg_CO2 <- readRDS("drop_neg_CO2_2023.rds")%>%
+drop_neg_CO2 <- readRDS("drop_neg_CO2_2024.rds")%>%
   dplyr::select(Plot_ID,drop_CO2)
 
 alldf <- alldf %>%
@@ -679,7 +688,7 @@ bad_plots <- unique(fluxes_weird$Plot_ID)
 
 # take a random sample (FALSE so we don't get the same plot twice)
 # set.seed(...) to guarantee reproducibility
-bad_sample <- sample(bad_plots, 2, replace=FALSE)
+bad_sample <- sample(bad_plots, 3, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in bad_sample){ 
@@ -761,11 +770,8 @@ for(P in all_sample){
   #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
 
 allflux_filtered <- allflux %>%
-  filter(!Plot_ID %in% c("2022_07_07_PTR_TR_9_1", #chamber closing issue
-                      "2022_07_08_CRC_W_44_1",    #bumps 
-                      "2022_07_08_CRC_TR_36_1", #chamber closing issue
-                      "2022_10_05_OWC_W_68_1"   #chamber closing issue
-                      ))
+  filter(!Plot_ID %in% c("2024_02_02_CRC_TR_48_1" #chamber closing issue
+                                           ))
 # TO DO..
 # reduce the stop time for 202_07_20_CRC_W_43_1 to 52sec; for 202_07_08_CRC_W_44_2 to 46sec
 
@@ -858,9 +864,15 @@ allflux_filtered_renamed <- allflux_filtered %>%
 
 
 #export as a csv to the folder that you want 
-write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2023_CH4.csv", row.names = FALSE) 
-#Change file name
+# write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CH4.csv", row.names = FALSE) 
+# #Change file name
+dir.create("Processed Data", showWarnings = FALSE, recursive = TRUE)
 
+write.csv(
+  allflux_filtered_renamed,
+  file = "Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CO2.csv",
+  row.names = FALSE
+)
 
 ```
 
