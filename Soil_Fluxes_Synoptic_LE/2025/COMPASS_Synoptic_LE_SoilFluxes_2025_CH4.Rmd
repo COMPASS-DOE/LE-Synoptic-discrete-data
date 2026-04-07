@@ -1,0 +1,873 @@
+---
+title: "COMPASS_Synoptic_LE_SoilFluxes_2025_CH4"
+author: "Roberta Peixoto "
+date: "2026-04-03"
+output: 
+  html_document:
+    self_contained: true
+
+---
+## Goals of this code: 
+1.	Reads in raw smart chamber
+2.	If no metadatafile, write one out & fields will be: 
+Label 
+the IDs pulled from the label, 
+Plot *fixed so that if there are any issues in the label they are good here 
+Drop column – false as long as label looks right 
+adjust time – would be initially populated by the start time in the OR blank 
+adjust observation length – initially populated by the obs length  OR blank 
+notes / comment 
+3.	Code reads in the meta data and applies it to the data 
+a.	i.e. drops fluxes that have the drop column TRUE or FLAG this 
+b.	adjusting times as needed 
+4.	Now you compute fluxes 
+5.	Visualize and look for issues 
+6.	If found, report to meta data file then go back to 3 and reanalyze 
+7.	Apply algorithmic qaqc and generate flags 
+
+
+## Set Up & Load Packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("remotes") # if necessary
+#remotes::install_github("COMPASS-DOE/fluxfinder")
+
+library(fluxfinder)
+library(ggplot2)
+library(ggpubr)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(stringr)
+
+```
+
+## Pull in Smart Chamber Files from the Raw Data folder
+```{r message=FALSE, warning = FALSE, results ='hide'}
+
+library(data.table)
+
+
+zip_path <- "D:/Github/LE-Synoptic-discrete-data/Soil_Fluxes_Synoptic_LE/2025/Raw Data_LE_2025.zip"
+
+stopifnot(file.exists(zip_path))
+
+out_dir <- "Soil_Fluxes_Synoptic_LE/2025/extracted_files"
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+
+zip_contents <- unzip(zip_path, list = TRUE)
+
+json_in_zip <- zip_contents$Name[grepl("\\.json$", zip_contents$Name, ignore.case = TRUE)]
+txt_in_zip  <- zip_contents$Name[grepl("\\.txt$",  zip_contents$Name, ignore.case = TRUE)]
+
+unzip(    zip_path,
+    files = c(json_in_zip, txt_in_zip),
+    exdir = out_dir)
+
+json_files <- list.files(
+    out_dir,
+    pattern = "\\.json$",
+    full.names = TRUE,
+    recursive = TRUE)
+
+txt_files <- list.files(
+    out_dir,
+    pattern = "\\.txt$",
+    full.names = TRUE,
+    recursive = TRUE)
+
+bad_json <- character()
+
+json_data <- lapply(
+    json_files,
+    function(f) {
+        tryCatch( ffi_read_LIsmartchamber(f),
+            error = function(e) {
+                bad_json <<- c(bad_json, f)
+                return(NULL)  }   )   })
+
+json_data <- json_data[!sapply(json_data, is.null)]
+
+bad_txt <- character()
+
+txt_data <- lapply(
+    txt_files,
+    function(f) {
+        tryCatch(
+            fread(f),   
+            error = function(e) {
+                bad_txt <<- c(bad_txt, f)
+                return(NULL)        }        )    })
+
+txt_data <- txt_data[!sapply(txt_data, is.null)]
+
+if (length(bad_json) > 0) {
+    warning(
+        paste(
+            "JSON files ignored due to read errors:\n",
+            paste(basename(bad_json), collapse = "\n")      ),
+        call. = FALSE    )}
+
+if (length(bad_txt) > 0) {
+    warning(
+        paste(
+            "TXT files ignored due to read errors:\n",
+            paste(basename(bad_txt), collapse = "\n")        ),
+        call. = FALSE    )}
+
+alldat2 <- rbindlist(
+    c(json_data, txt_data),
+    fill = TRUE)
+
+#fwrite(alldat, "Soil_Fluxes_LE_2025_all_sources_raw.csv")
+
+
+```
+
+## Unfortunatly - we had many problems with labels - we need to include the sites in the Plot_ID
+```{r}
+site_lookup <- tibble::tribble(
+  ~Date,         ~Site,
+  "2025-02-25",  "CRC",
+  "2025-04-25",  "CRC",
+  "2025-11-05",  "CRC",
+  "2025-09-16",  "DLG",
+  "2025-09-17",  "DLG",
+  "2025-09-19",  "DLG",
+  "2025-05-02",  "OWC", # check if there is a mm dd typo in the file name?
+  "2025-03-05",  "OWC",
+  "2025-01-31",  "OWC", 
+  "2025-08-01",  "OWC",# check if there is a mm dd typo in the file name?
+  "2025-11-05",  "OWC",# check if there is a mm dd typo in the file name?
+  "2025-02-07",  "PTR",
+  "2025-05-22",  "PTR", # check if there is a typo in the month 4 or 5?
+  "2025-04-22",  "PTR",
+  "2025-08-05",  "PTR",
+  "2025-11-13",  "PTR"
+) %>%
+  mutate(Date = as.Date(Date))
+
+# alldat  - date formatting
+alldat2 <- alldat2 %>%
+  mutate(Date = as.Date(TIMESTAMP))%>%
+  left_join(site_lookup, by = "Date")
+
+
+# Fixing label code problems 
+alldat <- alldat2 %>%
+  
+  ## Remove known invalid labels
+  filter(!label %in% c("tagtest","PTR_tesrt","PTR_tes","Test")) %>%
+
+  ## Normalize the raw label (do NOT trust embedded site)
+  mutate(
+    label = label %>%
+      str_remove_all("[sSeE]") %>%          # remove stray s/e
+      str_replace_all("-", "_") %>%         # standardize separators
+      str_replace_all(c(
+        "[Ww][tT]"     = "W",
+        "[Tt][Rr][a]?" = "TR",
+        "[Uu][Pp]"     = "UP",
+        "[Ww][lL]"     = "W",
+        "[w]"          = "W"
+      )) %>%
+      ## ensure ZONE_NUMBER format (W46 → W_46, TR34 → TR_34)
+      str_replace("_(W|TR|UP)(\\d)", "_\\1_\\2") %>%
+      ## separate suffix from number (48a → 48_a)
+      str_replace("(\\d+)([A-Za-z])$", "\\1_\\2")
+  ) %>%
+
+  ## Remove ANY site embedded in the original label
+  mutate(
+    label_core = str_remove(label, "^(CRC|OWC|PTR)_?")
+  ) %>%
+
+  ## Rebuild label using ONLY the site from site_lookup  #OWC recorded wrongly on 2023-Jan-12 instead of PTR
+  mutate(
+    label = paste0(Site, "_", label_core)
+  ) %>%
+
+  ## Standardize suffixes (only when they exist)
+  mutate(
+    n_underscores = str_count(label, "_"),
+    suffix = str_extract(label, "(?<=_)[^_]+$"),
+    label = if_else(
+      n_underscores >= 3 & !is.na(suffix),
+      str_replace(
+        label,
+        paste0("_", suffix, "$"),
+        paste0("_", tolower(suffix))
+      ),
+      label
+    )
+  ) %>%
+
+  ## Final cleanup
+  select(-label_core, -n_underscores, -suffix)
+
+# removing some labels with NA reflecting no data recorded in these file
+
+alldat<-alldat[
+    !is.na(label) & !grepl("^NA_", label)]
+
+
+alldat<-alldat%>%
+  mutate(
+    label = case_when(
+      # PTR typo cases
+      str_detect(label, "^PTR_t$")      ~ "PTR_UP_unknown",
+      str_detect(label, "^PTR_Tt$")     ~ "PTR_TR_unknown",
+      str_detect(label, "^PTR_TRt$")    ~ "PTR_TR_unknown",
+      
+      TRUE ~ label
+    )
+  )
+
+
+#I have to change labels that were recorded wrong - tracked in the field notes
+
+```
+
+## Create a unique Plot_ID, check if there is a meta-data file, if not, create a meta-data file
+```{r}
+
+############### only run this first part if you don't already have a meta-data file 
+        #because if you do then all the data for each one will have a plot and you won't be able to change start times
+
+#create unique Plot ID for each measurement: 
+#detach("package:data.table", unload=TRUE)
+
+# I am changing this from a month_ID to a date_ID as I have more than one day per month
+alldat <- alldat %>%
+  mutate(
+    Date_str = format(as.Date(TIMESTAMP), "%Y_%m_%d"),
+    Plot_ID = str_c(Date_str, label, RepNum, sep = "_")  )
+
+#this needs to be PLot ID so that later we ID plot from metadata and not the metadata row 
+
+# Path inside the zip
+zip_file <- "Raw Data_LE_2025.zip"
+csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2025.csv"
+
+# Make sure the destination folder exists
+dir.create("Raw Data", showWarnings = FALSE)
+
+# Extract only the metadata CSV if it doesn't already exist
+if (!file.exists(csv_inside_zip)) {
+  unzip(
+    zip_file,
+    files = csv_inside_zip,
+    exdir = "."
+  )
+}
+
+# Define the file path where you want to save the CSV file
+file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2025.csv"
+
+# Check if the CSV file exists
+if (file.exists(file_path)) {
+  # If it exists, read it back into R
+  metadata <- read.csv(file_path)
+  print("CSV file exists and has been read into the code.")
+} else {
+  # If it does not exist, create the CSV file
+    #create a metadata file from the Plot IDs 
+      # pull timestart timestamps to put in the metadata and obs lengths 
+  metadata <- alldat %>%
+  group_by(InstrumentSerialNumber, Plot_ID) %>%
+  summarise(SN = first(InstrumentSerialNumber), #Roberta => I included this to process more than one licor per time
+    Date = format(min(TIMESTAMP), "%Y-%m-%d"),
+    Time_start = format(min(TIMESTAMP), "%H:%M:%S"),
+    First_Timestamp = min(TIMESTAMP),  # Minimum (earliest) timestamp for each Plot_ID
+    Last_Timestamp = max(TIMESTAMP),   # Maximum (latest) timestamp for each Plot_ID
+    Total_Time = as.numeric(difftime(max(TIMESTAMP), min(TIMESTAMP), units = "secs")),  # Time difference in seconds
+    ) %>%
+  ungroup() %>%
+  mutate(Total_Time = pmin(Total_Time, 60),
+          drop = FALSE,# Add a 'drop' column with 'FALSE' for every row 
+          Notes = "") 
+  #mutate(notes = " ")  # Add a 'drop' column with 'FALSE' for every row
+  #mutate(Deadband = 5)
+  #mutate(Plot = Plot_ID) #think need this because we need to make a plot column
+  
+  # Write df_unique to CSV
+  write.csv(metadata, file = file_path, row.names = FALSE)
+  
+  print("CSV file does not exist. It has been created.")
+}
+```
+
+## Mark fluxes that were retaken - this is the first issue! Need to get all but last flux to be TRUE for drop - fieldnotes with explanation for flux retaken - usually weird zeros, Steven probe not inserted in the soil, or label mistake  
+```{r}
+
+# fluxes that were retaken have similar names with a letter after it 
+metadata_filtered <- metadata %>%
+  mutate(
+    # Base plot ID (everything before the last _number or _number_letter)
+    base_id = str_replace(Plot_ID, "_[0-9]+(_[a-z])?$", ""),
+    
+    # Replicate number (e.g., 32 from 1_Jul_CRC_UP_32 or 1_Jul_CRC_UP_32_b)
+    replicate = as.numeric(
+      str_extract(Plot_ID, "(?<=_)[0-9]+(?=(_[a-z])?$)")
+    ),
+    
+    # Suffix letter (if present); otherwise empty string
+    letter = str_extract(base_id, "(?<=_)[A-Za-z]$"),
+    letter = if_else(is.na(letter), "", letter),
+    
+    # Letter order to define order: "" < a < b < c < d ...
+    letter_order = if_else(
+      letter == "",
+      0L,
+      match(letter, letters)  ) ) 
+
+
+#creating a core ID to compare the retaken obs
+metadata_filtered <- metadata_filtered %>%
+  mutate(
+    # ID for plot not considering retake (remove _a, _b, _c, etc.)
+    core_id = str_remove(base_id, "_[A-Za-z]$")
+  ) %>%
+  group_by(core_id) %>%
+  mutate(
+    drop = letter_order < max(letter_order, na.rm = TRUE)
+  ) %>%
+  ungroup()
+ 
+```
+
+##Dont need to pull L1 temp data or any other temps like we do for macrophyte because the smartchamber records the temp
+
+## Match up the metadata to the rest of the data   
+```{r}
+#remove any metadata rows that have NAs for the PlotID
+metadata_filtered  <- metadata_filtered %>%
+  filter(!is.na(Plot_ID)) %>%
+  filter(str_detect(Plot_ID, paste(c("OWC", "CRC", "PTR"), collapse = "|"))) 
+
+alldat<-alldat%>% filter(!is.na(label))
+
+#match the altered metadata to the concentration data with fluxfinder ffi_metadata_match 
+# this next part was adapted to include SN and process all Licors at the same time, handling overlapping timestamp among >1 licor instruments. 
+
+# matching SN
+alldat <- alldat %>%
+  rename(SN=InstrumentSerialNumber)%>%
+  group_by(SN) %>%
+  mutate(
+    metadat_row = ffi_metadata_match(
+      data_timestamps = TIMESTAMP,
+      start_dates     = metadata_filtered$Date[metadata_filtered$SN == first(SN)],
+      start_times     = metadata_filtered$Time_start[metadata_filtered$SN == first(SN)],
+      obs_lengths     = metadata_filtered$Total_Time[metadata_filtered$SN == first(SN)]
+    )
+  ) %>%
+  ungroup()
+
+alldat <- alldat %>%
+  left_join(
+    metadata_filtered %>% mutate(metadat_row = row_number()),
+    by = c("SN", "metadat_row", "Plot_ID")
+  )
+
+#problems with labels - there was a chamber Offset of 75 instead of 5 and chamber volume of 0 from the smart chamber
+
+alldat <- alldat %>%
+  mutate(
+    # Fix the Offset bug Plot_ID OWC_02-10-2023 W 67: 75 -> 5 and recalculating volume based on different Offsets
+    Offset_cm = if_else(Offset == 75, 5, Offset),
+
+    # Fix chamber bug: volume should never be zero
+    ChamVolume_fixed_cm3 = if_else(
+      ChamVolume == 0,
+      4244.1,
+      ChamVolume
+    ),
+
+    # Recalculate collar volume (cm3)
+    CollarVolume_cm3 = Area * Offset_cm,
+
+    # Recalculate total volume (cm3)
+    TotalVolume_fixed_cm3 =
+      ChamVolume_fixed_cm3 +
+      IrgaVolume +
+      CollarVolume_cm3,
+  )
+
+```
+
+## fixing some Deadbands  Revisit here, it is not working to fix the dead band
+```{r}
+# Table of plots with custom deadband adjustments
+deadband_overrides <- tibble::tibble(
+  Plot_ID = c(
+   "2024_07_31_OWC_UP_51_2",
+   "2024_08_07_PTR_W_22_2",
+   "2024_07_31_OWC_UP_53_2",
+   "2024_08_07_PTR_UP_8_1",
+   "2024_07_31_OWC_W_72_2",
+   "2024_07_31_OWC_W_68_2",
+   "2024_07_31_OWC_W_72_1",
+   "2024_07_31_OWC_TR_63_2",
+   "2024_08_07_PTR_W_18_2",
+   "2024_07_31_OWC_UP_52_2",
+   "2024_07_31_OWC_W_65_2",
+   "2024_07_31_OWC_TR_64_1",
+   "2024_07_31_OWC_UP_53_1",
+   "2024_02_02_CRC_TR_39_2",
+   "2024_07_31_OWC_TR_61_1",
+   "2024_07_31_OWC_TR_61_2",
+   "2024_07_31_OWC_UP_51_2",
+   "2024_08_07_PTR_W_22_1",
+   "2024_07_31_OWC_UP_53_2",
+   "2024_08_07_PTR_UP_8_1",
+   "2024_07_31_OWC_W_72_2",
+   "2024_07_31_OWC_TR_63_2",
+   "2024_08_07_PTR_W_18_2",
+   "2024_07_31_OWC_UP_52_2",
+   "2024_07_31_OWC_W_65_2"
+     ),
+  DeadBand_override = c(
+    12,
+    10,
+    13,
+    10,
+    18,
+    13,
+    18,
+    14,
+    8,
+    8,
+    10,
+    18,
+    8,
+    9,
+    9,
+    20,
+    12,
+    10,
+    13,
+    10,
+    11,
+    15,
+    8,
+    8,
+    10
+    
+  )
+)
+
+# Default deadband
+alldat <- alldat %>%
+  mutate(DeadBand_used = DeadBand) 
+
+# Apply per-plot overrides
+alldat <- alldat %>%
+  left_join(deadband_overrides, by = "Plot_ID") %>%
+  mutate(
+    DeadBand_used = if_else(
+      !is.na(DeadBand_override),
+      DeadBand_override,
+      DeadBand_used
+    )
+  ) %>%
+  select(-DeadBand_override)
+
+```
+
+
+## Change the units from ppb to nmol  
+```{r}
+#change the units
+alldat$CH4_nmol <- ffi_ppb_to_nmol(alldat$ch4, 
+                                volume = (alldat$TotalVolume_fixed_cm3 / 1000000), # have to divide to get to m3
+                                temp = alldat$chamber_t)    # degrees C
+#> Assuming atm = 101325 Pa
+#> Using R = 8.31446261815324 m3 Pa K-1 mol-1
+
+alldat$CH4_nmol_m2 <- alldat$CH4_nmol / 0.0318 #adjust for the area 
+
+
+```
+
+## Calculate fluxes
+```{r, message=FALSE, warning = FALSE, results ='hide'}
+
+#need to create a new line that would say only calculate the flux if the drop column is false
+alldat_dropped<-alldat%>%filter(drop!=TRUE)
+
+#selecting the base id to include in the flux df later
+plot_base_lookup <- alldat %>%
+  select(Plot_ID, base_id)%>% 
+  filter(!is.na(base_id)) %>%   
+  distinct(Plot_ID, .keep_all = TRUE)
+
+
+#calculate fluxes for all other sites 
+fluxes <- ffi_compute_fluxes(alldat_dropped,
+                             group_column = "Plot_ID", 
+                             time_column = "TIMESTAMP", 
+                             gas_column = "CH4_nmol_m2", 
+                             dead_band = "DeadBand_used")
+head(fluxes)
+#including the unique ID 
+fluxes <- fluxes %>%
+  left_join(plot_base_lookup, by = "Plot_ID")
+
+##Create a dataframe with averaged soil probe data per Plot and add to flux data
+soildat <- alldat %>% 
+    group_by(Plot_ID) %>%
+  dplyr::summarize(
+     soilp_c = mean(soilp_c, na.rm=TRUE),
+     soilp_m = mean(soilp_m, na.rm=TRUE),
+     soilp_t = mean(soilp_t, na.rm=TRUE))
+
+alldf <- left_join(fluxes, soildat, by = "Plot_ID")
+
+#reading the list of negative CO2 flux 
+drop_neg_CO2 <- readRDS("drop_neg_CO2_2025.rds")%>%
+  dplyr::select(Plot_ID,drop_CO2)
+
+alldf <- alldf %>%
+  left_join(drop_neg_CO2, by = "Plot_ID")%>%
+  mutate(drop_CO2 = coalesce(drop_CO2, FALSE))
+
+
+allflux <-alldf%>%filter(drop_CO2!=TRUE)
+
+
+```
+
+
+## Visualize fluxes and sort by r2 
+```{r, message=FALSE, warning = FALSE, results ='hide'}
+
+#take a look at the fluxes we calculated with R2 
+ggplot(allflux, aes(Plot_ID, lin_flux.estimate, color = lin_r.squared)) +
+  geom_point(size=4) + theme_classic() + #ylim(-50,2000) + 
+  geom_linerange(aes(ymin = lin_flux.estimate- lin_flux.std.error,
+                   ymax = lin_flux.estimate+ lin_flux.std.error)) +
+  scale_color_gradientn(colours = c("darkred",  "red", "white","lightblue", "darkblue"),
+                        values = c(0, 0.5, 0.6, 0.7, 1)) +
+  ylab("CH4 flux (nmol/m2/s)")
+
+#sort fluxes by R2 
+fluxes_good <- as.data.frame(subset(allflux, lin_r.squared >= .90, select = Plot_ID:TIMESTAMP_max))
+fluxes_lowr2 <- as.data.frame(subset(allflux, lin_r.squared < .90 & lin_flux.estimate < 1, select = Plot_ID:TIMESTAMP_max))
+fluxes_weird <- as.data.frame(subset(allflux, lin_r.squared < .90 & lin_flux.estimate > 1, select = Plot_ID:TIMESTAMP_max))
+
+#find fluxes that represent the first and fourth quartile of the data 
+low <- quantile(allflux$lin_flux.estimate, 0.05, na.rm=TRUE) 
+high <- quantile(allflux$lin_flux.estimate, 0.95, na.rm=TRUE) 
+
+fluxes_low <- as.data.frame(subset(allflux, lin_flux.estimate <= low, select = Plot_ID:TIMESTAMP_max))
+fluxes_high <- as.data.frame(subset(allflux, lin_flux.estimate >= high, select = Plot_ID:TIMESTAMP_max))
+
+tails <- rbind(fluxes_low, fluxes_high)
+
+```
+
+## check the fluxes for which I changed the start time due to lags or ebullition (recorded in notes of metadata)
+```{r}
+
+#### If something is in a V shape should we take the second part to make a positive linear curve?
+
+# Subset data and create relative time (seconds since flux start)
+r_all <- alldat %>%
+  filter(Plot_ID %in% deadband_overrides$Plot_ID) %>%
+  group_by(Plot_ID) %>%
+  mutate(
+    time_sec = as.numeric(
+      difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")
+    )
+  ) %>%
+  ungroup()
+
+
+# Random sample of plots for visualization
+set.seed(123)
+
+plots_sample <- sample(
+  unique(r_all$Plot_ID),
+  5,
+  replace = FALSE
+)
+
+r_plot <- r_all %>%
+  filter(Plot_ID %in% plots_sample)
+
+# Plot
+ggplot(
+  r_plot,
+  aes(
+    x = TIMESTAMP,
+    y = ch4,
+    color = time_sec >= DeadBand_used
+  )
+) +
+  geom_point(size = 1.8) +
+  facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +
+  scale_color_manual(
+    values = c("grey60", "red"),
+    labels = c("Discarded (deadband)", "Used after deadband")
+  ) +
+  theme_classic() +
+  ylab(expression(paste(CH[4], " (ppb)"))) +
+  xlab("Time")
+
+```
+
+
+## Spot check a few fluxes with R2 > 0.9  
+```{r, echo=FALSE}
+
+### pull a random sample of good fluxes to check and plot 
+good_plots <- unique(fluxes_good$Plot_ID)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+good_sample <- sample(good_plots, 5, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in good_sample){ 
+  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), ch4)) + geom_point() + 
+  scale_x_datetime(breaks = "15 sec") + 
+  theme_classic() +
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) + 
+  geom_smooth()
+  print(p1)
+  }
+
+####################
+```
+
+## Take a look at the  fluxes <0.9 and a flux estimate below 1
+```{r, echo=FALSE}
+
+####Do we just leave these alone because the fluxes are so low?####
+
+### pull out fluxes with R2 < 0.9 and put them in a list 
+low_plots <- unique(fluxes_lowr2$Plot_ID)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+low_sample <- sample(low_plots, 5, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in low_sample){ 
+  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, ch4)) + geom_point() + theme_classic() +
+  scale_x_datetime(breaks = "15 sec") + 
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) + 
+  geom_smooth()
+  print(p1)
+  }
+
+####################
+
+```
+
+## Take a look at the bad fluxes <0.9 and have a high flux estimate 
+# See if we want to remove these fluxes or if we want to try and recalculate these ones? 
+```{r, echo=FALSE}
+
+### pull out fluxes with R2 < 0.9 and put them in a list 
+bad_plots <- unique(fluxes_weird$Plot_ID)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+bad_sample <- sample(bad_plots, 3, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in bad_sample){ 
+  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, ch4)) + geom_point() + theme_classic() + 
+  scale_x_datetime(breaks = "15 sec") + 
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) +
+  geom_smooth()
+  print(p1)
+  }
+
+####################
+
+
+```
+
+## Look at the really high or really low ones to see if there is a timing issue or something
+```{r, echo=FALSE}
+
+### pull out fluxes in the 5% and 95% tails to look at really high and really low 
+tail_plots <- unique(tails$Plot_ID)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+tail_sample <- sample(tail_plots, 5, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in tail_sample){ 
+  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, ch4)) + geom_point() + theme_classic() + 
+  scale_x_datetime(breaks = "15 sec") + 
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) + 
+  geom_smooth()
+  print(p1)
+  }
+
+#would be nice to put on the plot the flux estimate and if it is a high or low or something 
+####################
+
+
+```
+
+## Check all fluxes
+```{r, echo=FALSE}
+
+##Put all fluxes together
+fluxes_all <- as.data.frame(subset(allflux, select = Plot_ID:TIMESTAMP_max))
+
+all_plots <- unique(fluxes_all$Plot_ID)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+all_sample <- sample(all_plots, 5, replace=FALSE)
+
+#Loop to run five random plots subset above
+for(P in all_sample){
+  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, ch4)) + geom_point() + theme_classic() +
+  scale_x_datetime(breaks = "15 sec") +
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) +
+  geom_smooth(color="red")
+  print(p1)
+  }
+
+####################
+```
+
+
+## Remove any fluxes that do not fit criteria 
+```{r, echo=FALSE}
+
+# Create a new dataframe by removing rows that were present in fluxes_weird (11 obs)
+#allflux_filtered <- allflux[!(allflux$Plot_ID %in% fluxes_weird$Plot_ID), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad
+
+#Any others that are not in the weird category that need to be removed: 
+  #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
+
+allflux_filtered <- allflux %>%
+  filter(!Plot_ID %in% c("2024_02_02_CRC_TR_48_1" #chamber closing issue
+                                           ))
+# TO DO..
+# reduce the stop time for 202_07_20_CRC_W_43_1 to 52sec; for 202_07_08_CRC_W_44_2 to 46sec
+
+# View the result
+head(allflux_filtered)
+
+
+```
+
+
+## Do some visualization of QAQC plots to assess fluxes  
+```{r, echo=FALSE}
+
+p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)) +
+  geom_point(size=4) + geom_abline() + 
+  theme_classic() + 
+  labs(title = "A") + 
+  ylab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Robust Method"))) +
+  xlab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Linear Method"))) +
+  guides(color = guide_legend(title = "Plot_ID")) +
+  theme(legend.position="none") +
+  theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
+        axis.title.y = element_text(size=12), legend.text=element_text(size=12),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth =1), 
+        aspect.ratio = 1)
+p1
+
+
+p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
+  geom_point(size=4) + geom_abline() + 
+  theme_classic() + 
+  xlim(0,1) + ylim(0,1) +
+  labs(title = "B") + 
+  ylab(expression(paste("R"^2* " Second-Order Polynomial"))) +
+  xlab(expression(paste("R"^2* " Linear Model"))) +
+  guides(color = guide_legend(title = "Plot_ID")) + 
+  theme(legend.position="none") +
+  theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
+        axis.title.y = element_text(size=12), legend.text=element_text(size=12),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth =1), 
+        aspect.ratio = 1)
+p2
+
+p3 <- ggplot(allflux_filtered, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+  geom_point(size=4) + geom_abline() + 
+  theme_classic() + 
+  #xlim(0,50) + #ylim(0,50) +
+  labs(title = "C") + 
+  ylab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") HM1981 Method"))) +
+  xlab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Linear Method"))) +
+  guides(color = guide_legend(title = "Plot_ID")) + 
+  theme(legend.position="right") +
+  theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
+        axis.title.y = element_text(size=12), legend.text=element_text(size=12),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth =1), 
+        aspect.ratio = 1)
+p3
+
+#ggarrange(p1, p2, p3, ncol=3, nrow=1) #, common.legend = TRUE, legend="none")
+```
+
+## Read out final dataframe and export for use elsewhere 
+```{r, echo=FALSE}
+
+allflux_filtered_renamed <- allflux_filtered %>%
+    separate(
+    Plot_ID,
+    into = c("Year", "Month_num", "Day", "Site", "Zone", "Rest"),
+    sep = "_",
+    fill = "right",
+    extra = "merge",
+    remove = FALSE
+  ) %>%
+  
+  mutate(
+    Month = month.abb[as.integer(Month_num)],
+        # RepNumber is always the final number
+    RepNumber = as.integer(str_extract(Plot_ID, "[0-9]+$")),
+        # Replicate = numeric collar ID only (removes letters like a, b)
+    Replicate = as.integer(str_extract(Rest, "^[0-9]+"))
+  ) %>%
+      
+  rename(Plot = Plot_ID) %>%
+  
+  select(
+    RepNumber, Month, Site, Zone, Replicate, Plot,
+    everything(),
+    -Year, -Day, -Month_num, -Rest, -base_id
+  )
+
+
+#export as a csv to the folder that you want 
+# write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2025_CH4.csv", row.names = FALSE) 
+# #Change file name
+dir.create("Processed Data", showWarnings = FALSE, recursive = TRUE)
+
+write.csv(
+  allflux_filtered_renamed,
+  file = "Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2025_CO2.csv",
+  row.names = FALSE
+)
+
+```
+
+
+
