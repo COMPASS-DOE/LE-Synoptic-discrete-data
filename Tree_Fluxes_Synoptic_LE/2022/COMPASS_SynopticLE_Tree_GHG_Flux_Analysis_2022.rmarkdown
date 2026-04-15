@@ -21,120 +21,53 @@ lapply(c( "fluxfinder", "readxl",
 ## Pull in Raw Datafiles
 
 ```{r}
-#defining where the raw data is
 
-DATA_DIR_ROOT <- file.path(
-  "Tree_Fluxes_Synoptic_LE",
-  "2022",
-  "Raw Data"
-)
+#list files in raw data folder
+L <- list.files(path = "Raw Data/", pattern = "\\.data$", #"txt$", 
+                full.names = TRUE)
+head(L)
 
+#Read in the data 
+alldat1 <- lapply(L, ffi_read_LI7810)
 
-#fucntion to read data
-now <- function() format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-message(now(), " | Script started")
-#finding the zip files
-message(now(), " | Looking for ZIP files in: ", DATA_DIR_ROOT)
+alldat <- data.table::rbindlist(alldat1, fill=TRUE)
 
-zip_files <- list.files(
-  DATA_DIR_ROOT,
-  pattern = "\\.zip$",
-  full.names = TRUE)
-
-message(now(), " | ZIP files found: ", length(zip_files))
-print(zip_files)
-  if (length(zip_files) == 0) {
-  stop("No ZIP files found. Check DATA_DIR_ROOT.")}
-
-cache <- list()
-
-# Reader function
-read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
-  message(now(), " | Processing ZIP: ", basename(zip_file))
-  if (zip_file %in% names(cache)) {
-    message("  -> Using cached version")
-    return(cache[[zip_file]])  }
-
-  tmp_dir <- tempfile("li7810_")
-  dir.create(tmp_dir)
-  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
-  unzip(zip_file, exdir = tmp_dir)
-  data_files <- list.files(
-    tmp_dir,
-    pattern = "\\.data$",
-    full.names = TRUE,
-    recursive = TRUE  )
-
-  message("  -> .data files found: ", length(data_files))
-  if (length(data_files) == 0) {
-    stop("No .data files inside ZIP: ", zip_file) }
-
-  dat_list <- lapply(data_files, function(f) {
-    message("     Reading: ", basename(f))
-    ffi_read_LI7810(f)})
-
-  dat <- data.table::rbindlist(dat_list, fill = TRUE) %>%
-    mutate(TIMESTAMP = with_tz(TIMESTAMP, tz))
-  cache[[zip_file]] <<- dat
-  message("  -> ZIP finished: ", basename(zip_file))
-  return(dat)}
-
-# ACTUAL EXECUTION 
-message(now(), " | Starting data read")
-alldat_list <- lapply(zip_files, read_li7810_zip)
-alldat <- data.table::rbindlist(alldat_list, fill = TRUE)
-message(now(), " | DONE")
-message("Final number of rows: ", nrow(alldat))
-
-# Show result
-print(head(alldat))
+#fixing timestamp errors
+#unique(alldat$TZ) [1] "US/Eastern" "America/New_York" "EST5EDT"
+alldat <- alldat %>% 
+  mutate(TIMESTAMP = with_tz(TIMESTAMP, tzone = "US/Eastern"))
 ```
 
 ## Read in metadata file and match to raw data
 
 ```{r}
 md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2022b.csv"
-dat <- read.csv(md)
+metadat <- read.csv(md)
 
-metadat <- dat %>%
-  # Remove rows without date
-  filter(!is.na(Date)) %>%
-  # Keep only desired instruments
-  filter(SN %in% c("TG10-01448", "TG10-01426")) %>%
-  # Normalize Plot labels
-  mutate(
-    Plot_raw = toupper(Plot),
-    # Extract plot components 
-    Site = str_extract(Plot_raw, "^[A-Z]{3}"),
-    Zone = str_extract(Plot_raw, "(TR|UP)"),
-    Replicate = str_extract(Plot_raw, "(?<=TR|UP)[0-9]+"),
-    # Letter ONLY if it comes AFTER a number
-    Letter = str_extract(Plot_raw, "(?<=[0-9])[A-Z]$"),
-    # Time normalization
-    Time_start = str_replace_all(as.character(Time_start), "\\.", ":") |> str_trim(),
-    Stop.time  = str_replace_all(as.character(Stop.time),  "\\.", ":") |> str_trim(),
-    # Safe time parsing (NO WARNINGS) 
-    t_start = suppressWarnings(parse_date_time(Time_start, orders = c("H:M:S", "H:M"))),
-    t_stop  = suppressWarnings(parse_date_time(Stop.time,  orders = c("H:M:S", "H:M"))),
-    # Observation length
-    Obs_length = as.numeric(t_stop - t_start, units = "secs"),
-    # Timestamp
-    TIMESTAMP = as.POSIXct(
-      paste(Date, Time_start),
-      format = "%m/%d/%Y %H:%M:%S",
-      tz = "EST"
-    ),
-    # Sequential ID
-    Seq = row_number(),
-    # INAL standardized Plot label
-    Plot = if_else(
-      is.na(Letter),
-      paste(Date, Site, Zone, Replicate, Seq, sep = "_"),
-      paste(Date, Site, Zone, Replicate, Letter, Seq, sep = "_")) )
+#can remove any row that have NA's in the date column 
+metadat <- metadat %>%
+  filter(!is.na(Date))
 
-# Quick check
-head(metadat$Plot)
+#need to make a unique plot id that includes the date or an obs number
+metadat$Plot_ID <- paste0(metadat$Plot_ID, "-", seq_len(nrow(metadat)))
+#metadat$Obs_length <- 90
 
+#creating the obs_length column based on the stop time
+
+metadat <- metadat %>%
+  #first test/need to include other licors here later
+  filter(SN %in% c("TG10-01448", "TG10-01426")) %>% 
+     mutate(Obs_length = as.numeric(as.duration(
+                        hms(Stop.time) - hms(Time_start)),
+                        units = "secs"),
+            TIMESTAMP = as.POSIXct(
+                        paste(Date, Time_start),
+                        format = "%m/%d/%Y %H:%M:%S",
+                        tz = "EST"  )   )
+
+metadat$Plot <- paste0(metadat$Date, metadat$Plot, "-", seq_len(nrow(metadat)))
+
+head(metadat)
 ```
 
 ## Check start times overlaps
@@ -186,71 +119,64 @@ overlaps_detected
 ## Match metadata to raw data
 
 ```{r}
-#function to match data per equipment (considering different serial numbers) uhul!
+
+#match the metadata to the concentration data 
+# matching SN
 match_flux_metadata <- function(alldat, metadat) {
-  message("Starting metadata ↔ Licor matching")
-  #Sanity checks (fail early)
-  stopifnot(
-    "TIMESTAMP" %in% names(alldat),
-    "SN"        %in% names(alldat),
-    "Date"      %in% names(metadat),
-    "Time_start"%in% names(metadat),
-    "Obs_length"%in% names(metadat),
-    "Plot"      %in% names(metadat)
+
+  # Identify instruments strictly from metadata
+  instruments <- intersect(
+    unique(metadat$SN),
+    unique(alldat$SN)
   )
 
-  stopifnot(all(metadat$Obs_length > 0, na.rm = TRUE))
-  stopifnot(anyDuplicated(metadat$Plot) == 0)
- # Instruments present in BOTH datasets
-  instruments <- intersect(
-    unique(alldat$SN),
-    unique(metadat$SN)
-  )
-  message("Instruments to process: ", paste(instruments, collapse = ", "))
   results <- lapply(instruments, function(sn) {
+
     message("Processing SN: ", sn)
-    dat_i <- alldat %>%
+
+    # Subset data and metadata for this instrument
+    dat_i <- alldat %>% 
       filter(SN == sn)
-    meta_i <- metadat %>%
+
+    meta_i <- metadat %>% 
       filter(SN == sn) %>%
-      arrange(Date, Time_start) %>%
-      mutate(metadat_row = row_number())
-    stopifnot(nrow(meta_i) > 0)
-  # Actual matching 
-    dat_i$metadat_row <- ffi_metadata_match(
+      arrange(Date, Time_start)
+
+    # Create explicit metadata index
+    meta_i$metadat_row <- seq_len(nrow(meta_i))
+
+    # Temporal matching
+    dat_i$metadat_row <- fluxfinder::ffi_metadata_match(
       data_timestamps = dat_i$TIMESTAMP,
       start_dates     = meta_i$Date,
       start_times     = meta_i$Time_start,
-      obs_lengths     = meta_i$Obs_length  )
-  # Attach metadata (vectorized, fast)
-    dat_i <- dat_i %>%
-      mutate(
-        Plot      = meta_i$Plot[metadat_row],
-        Volume    = meta_i$Volume[metadat_row],
-        Temp      = meta_i$Temp[metadat_row],
-        Area      = meta_i$Area[metadat_row],
-        Dead_band = meta_i$Dead_band[metadat_row]      )
-  # Drop unmatched rows
-    n_before <- nrow(dat_i)
-    dat_i <- dat_i %>% filter(!is.na(metadat_row))
-    n_after <- nrow(dat_i)
-    message("  Matched rows: ", n_after, " / ", n_before)
-    dat_i })
-  alldat_matched <- rbindlist(results, fill = TRUE)
-  #Final sanity checks 
-  stopifnot(
-    !anyNA(alldat_matched$Plot),
-    nrow(alldat_matched) > 0
-  )
-  message("Matching finished successfully")
-  return(alldat_matched)}
+      obs_lengths     = meta_i$Obs_length
+    )
 
-#running the funciton
-message("Running final metadata matching...")
-alldat_matched <- match_flux_metadata(alldat, metadat)
-message("Matched dataset rows: ", nrow(alldat_matched))
-head(alldat_matched)
+    # Attach metadata INSIDE the SN loop (this is the part you were missing)
+    dat_i$Plot      <- meta_i$Plot[dat_i$metadat_row]
+    dat_i$Volume    <- meta_i$Volume[dat_i$metadat_row]
+    dat_i$Temp      <- meta_i$Temp[dat_i$metadat_row]
+    dat_i$Site      <- meta_i$Site[dat_i$metadat_row]
+    dat_i$Dead_band <- meta_i$Dead_band[dat_i$metadat_row]
 
+    # Drop unmatched timestamps
+    dat_i <- dat_i %>% 
+      filter(!is.na(metadat_row))
+
+    return(dat_i)
+  })
+
+  alldat_final <- match_flux_metadata(alldat, metadat)
+  
+  # Combine all instruments back
+  alldat_final <- data.table::rbindlist(results, fill = TRUE)
+
+  return(alldat_final)
+}
+
+# creating te final df
+alldat_final <- match_flux_metadata(alldat, metadat)
 
 #can remove any row that have NA's in the CH4 column 
 #alldat <- alldat %>%
@@ -296,17 +222,11 @@ deadband_overrides <- tibble::tibble(
 )
 
 # Default deadband
-alldat_matched <- alldat_matched %>%
-  mutate(
-    DeadBand_used = as.numeric(Dead_band),
-    DeadBand_used = if_else(
-      is.na(DeadBand_used),
-      0,     
-      DeadBand_used    )
-  )
+alldat <- alldat %>%
+  mutate(DeadBand_used = DeadBand) 
 
 # Apply per-plot overrides
-alldat_matched <- alldat_matched %>%
+alldat <- alldat %>%
   left_join(deadband_overrides, by = "Plot") %>%
   mutate(
     DeadBand_used = if_else(
@@ -316,8 +236,6 @@ alldat_matched <- alldat_matched %>%
     )
   ) %>%
   select(-DeadBand_override)
-
-
 ```
 
 ## Calculate fluxes
@@ -326,15 +244,15 @@ alldat_matched <- alldat_matched %>%
 
 # NEED TO PULL TEMP from the weather station
 #change the units
-alldat_matched $CH4_nmol <- ffi_ppb_to_nmol(alldat_matched $CH4, 
-                                volume = alldat_matched $Volume, # m3
-                                temp = alldat_matched $Temp)    # degrees C
+alldat_final$CH4_nmol <- ffi_ppb_to_nmol(alldat_final$CH4, 
+                                volume = alldat_final$Volume, # m3
+                                temp = alldat_final$Temp)    # degrees C
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_matched $CH4_nmol_m2 <- alldat_matched $CH4_nmol / 0.16
+alldat_final$CH4_nmol_m2 <- alldat_final$CH4_nmol / 0.16
 
-fluxes <- ffi_compute_fluxes(alldat_matched ,
+fluxes <- ffi_compute_fluxes(alldat_final,
                              group_column = "Plot", 
                              time_column = "TIMESTAMP", 
                              gas_column = "CH4_nmol_m2", 
@@ -421,7 +339,7 @@ good_sample <- sample(good_plots, 9, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in good_sample){ 
-  r1 <- subset(alldat_matched, Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_final, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), CH4)) + geom_point() + 
   scale_x_datetime(breaks = "15 sec") + 
   theme_classic() +
@@ -450,7 +368,7 @@ low_sample <- sample(low_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in low_sample){ 
-  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_final, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CH [4], " (ppb)"))) +
@@ -476,7 +394,7 @@ bad_sample <- sample(bad_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in bad_sample){ 
-  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_final, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CH [4], " (ppb)"))) +
@@ -500,7 +418,7 @@ tail_sample <- sample(tail_plots, 2, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in tail_sample){ 
-  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_final, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CH4 [4], " (ppb)"))) +
@@ -527,7 +445,7 @@ all_sample <- sample(all_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above
 for(P in all_sample){
-  r1 <- subset(alldat_matched, Plot== P & !is.na(metadat_row))
+  r1 <- subset(alldat_final, Plot== P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") +
   ylab(expression(paste( CH [4], " (ppb)"))) +
@@ -616,19 +534,17 @@ p3
 
 ```{r}
 
-allflux_filtered_renamed <- fluxes %>%
+allflux_filtered_renamed <- fluxes_all %>%
+
   mutate(
     Date = mdy(str_extract(Plot, "^[0-9]+/[0-9]+/[0-9]{4}")),
     Month = month.abb[month(Date)],
     Site = str_extract(Plot, "(PTR|OWC|CRC)"),
-    Zone = str_extract(Plot, "_TR_|_UP_") %>%
-      str_remove_all("_"),
-    Replicate = as.integer(
-      str_extract(Plot, "(?<=_(TR|UP)_)[0-9]+")
-    ),
-   Plot_ID = as.integer(
-      str_extract(Plot, "[0-9]+$")) ) %>%
-  
+    Zone = str_extract(Plot, "_[A-Za-z]+") %>% str_remove("^_"),
+    Replicate = as.integer(str_extract(Plot, "(?<=Up|Tr)[0-9]+")),
+    Plot_ID = as.integer(str_extract(Plot, "(?<=-)[0-9]+"))
+  ) %>%
+
   # Optional: rebuild a clean Plot label
   mutate(
     Plot_clean = paste(
@@ -640,7 +556,7 @@ allflux_filtered_renamed <- fluxes %>%
       sep = "_"
     )
   ) %>%
-  
+
   select(
     Plot_clean,
     Date,
@@ -661,3 +577,4 @@ write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_Tre
 ```
 
 ## 
+
