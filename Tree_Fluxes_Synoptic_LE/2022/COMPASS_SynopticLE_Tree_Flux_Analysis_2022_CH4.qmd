@@ -1,0 +1,663 @@
+---
+title: "COMPASS_Synoptic_LE_Tree_CH4_Flux_Calcs_2022"
+author: "Roberta Peixoto"
+date: "2026-04-17"
+output: 
+  html_document:
+    self_contained: true 
+---
+
+## Add Required Packages
+
+```{r packages, include = FALSE}
+lapply(c( "fluxfinder", "readxl",
+  "dplyr", "ggplot2", "ggpubr", "stringr",
+  "purrr", "tidyverse", "here", "broom", "tibble",
+  "googledrive", "googlesheets4", "data.table", 
+  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr"), 
+  library, character.only = TRUE)
+```
+
+## Pull in Raw Datafiles
+
+```{r}
+#defining where the raw data is
+
+DATA_DIR_ROOT <- here::here(
+  "Tree_Fluxes_Synoptic_LE",
+  "2022",
+  "Raw Data"
+)
+
+
+#fucntion to read data
+now <- function() format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+message(now(), " | Script started")
+#finding the zip files
+message(now(), " | Looking for ZIP files in: ", DATA_DIR_ROOT)
+
+zip_files <- list.files(
+  DATA_DIR_ROOT,
+  pattern = "\\.zip$",
+  full.names = TRUE)
+
+message(now(), " | ZIP files found: ", length(zip_files))
+print(zip_files)
+  if (length(zip_files) == 0) {
+  stop("No ZIP files found. Check DATA_DIR_ROOT.")}
+
+cache <- list()
+
+# Reader function
+read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
+  message(now(), " | Processing ZIP: ", basename(zip_file))
+  if (zip_file %in% names(cache)) {
+    message("  -> Using cached version")
+    return(cache[[zip_file]])  }
+
+  tmp_dir <- tempfile("li7810_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  unzip(zip_file, exdir = tmp_dir)
+  data_files <- list.files(
+    tmp_dir,
+    pattern = "\\.data$",
+    full.names = TRUE,
+    recursive = TRUE  )
+
+  message("  -> .data files found: ", length(data_files))
+  if (length(data_files) == 0) {
+    stop("No .data files inside ZIP: ", zip_file) }
+
+  dat_list <- lapply(data_files, function(f) {
+    message("     Reading: ", basename(f))
+    ffi_read_LI7810(f)})
+
+  dat <- data.table::rbindlist(dat_list, fill = TRUE) %>%
+    mutate(TIMESTAMP = with_tz(TIMESTAMP, tz))
+  cache[[zip_file]] <<- dat
+  message("  -> ZIP finished: ", basename(zip_file))
+  return(dat)}
+
+# ACTUAL EXECUTION 
+message(now(), " | Starting data read")
+alldat_list <- lapply(zip_files, read_li7810_zip)
+alldat <- data.table::rbindlist(alldat_list, fill = TRUE)
+message(now(), " | DONE")
+message("Final number of rows: ", nrow(alldat))
+
+# Show result
+print(head(alldat))
+
+#REMOVING WEIRD VERY LOW VALUES ON "2022-12-20 11:41:00" co2=-4000 licor bug???
+alldat<-alldat%>%filter(CO2>-1000)
+```
+
+## Read in metadata file and match to raw data
+
+```{r}
+md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2022b.csv"
+dat <- read.csv(md)
+
+metadat <- dat %>%
+  # Remove rows without date
+  filter(!is.na(Date)) %>%
+  # Keep only desired instruments
+  filter(SN %in% c("TG10-01448", "TG10-01426", "TG10-01028")) %>%
+  # Normalize Plot labels
+  mutate(
+    Plot_raw = toupper(Plot),
+    # Extract plot components 
+    Site = str_extract(Plot_raw, "^[A-Z]{3}"),
+    Zone = str_extract(Plot_raw, "(TR|UP)"),
+    Replicate = str_extract(Plot_raw, "(?<=TR|UP)[0-9]+"),
+    # Letter ONLY if it comes AFTER a number
+    Letter = str_extract(Plot_raw, "(?<=[0-9])[A-Z]$"),
+    # Time normalization
+    Time_start = str_replace_all(as.character(Time_start), "\\.", ":") |> str_trim(),
+    Stop.time  = str_replace_all(as.character(Stop.time),  "\\.", ":") |> str_trim(),
+    # Safe time parsing (NO WARNINGS) 
+    t_start = suppressWarnings(parse_date_time(Time_start, orders = c("H:M:S", "H:M"))),
+    t_stop  = suppressWarnings(parse_date_time(Stop.time,  orders = c("H:M:S", "H:M"))),
+    # Observation length
+    Obs_length = as.numeric(t_stop - t_start, units = "secs"),
+    # Timestamp
+    TIMESTAMP = as.POSIXct(
+      paste(Date, Time_start),
+      format = "%m/%d/%Y %H:%M:%S",
+      tz = "EST"
+    ),
+    # Sequential ID
+    Seq = row_number(),
+    # INAL standardized Plot label
+    Plot = if_else(
+      is.na(Letter),
+      paste(Date, Site, Zone, Replicate, Seq, sep = "_"),
+      paste(Date, Site, Zone, Replicate, Letter, Seq, sep = "_")) )
+
+# Quick check
+head(metadat$Plot)
+
+```
+
+## Check start times overlapsor missing values
+
+```{r}
+
+#checking if there is any start and stop time overlap from the field notes
+overlaps_detected <- metadat %>%
+  mutate(
+    start_ts = as.POSIXct(
+      paste(Date, Time_start),
+      format = "%m/%d/%Y %H:%M:%S",
+      tz = "EST"
+    ),
+    end_ts = start_ts + Obs_length
+  ) %>%
+  arrange(SN, start_ts) %>%
+  group_by(SN) %>%
+  mutate(
+    next_plot     = lead(Plot),
+    next_start_ts = lead(start_ts),
+    overlap_ffi   = !is.na(next_start_ts) & next_start_ts <= end_ts
+  ) %>%
+  filter(overlap_ffi) %>%
+  select(
+    SN,
+    Plot,
+    start_ts,
+    end_ts,
+    next_plot,
+    next_start_ts,
+    Obs_length
+  )
+
+print(overlaps_detected)
+
+#checking problems with obs_length - this is a frequent bug for manual field notes 
+field_notes_overlap<-metadat %>%
+  mutate(
+    obs_problem =
+      is.na(Obs_length) | Obs_length <= 0
+  ) %>%
+  filter(obs_problem) %>%
+  select(
+    SN,
+    Date,
+    Plot,
+    Time_start,
+    Stop.time,
+    Obs_length
+  )
+
+print(field_notes_overlap)
+
+# checking unique measurment start time and stop time
+# alldat %>%
+#     filter(
+#         SN == "TG10-01448",
+#         TIMESTAMP > as.POSIXct("2023-01-05 13:28:00"),
+#         TIMESTAMP < as.POSIXct("2023-01-05 13:33:00")
+#     ) %>%
+#     ggplot(aes(x = TIMESTAMP, y = CO2)) +
+#     geom_point()#+ylim(300,500)
+
+```
+
+## Match metadata to raw data
+
+```{r}
+#function to match data per equipment (considering different serial numbers) uhul!
+match_flux_metadata <- function(alldat, metadat) {
+  message("Starting metadata ↔ Licor matching")
+  #Sanity checks (fail early)
+  stopifnot(
+    "TIMESTAMP" %in% names(alldat),
+    "SN"        %in% names(alldat),
+    "Date"      %in% names(metadat),
+    "Time_start"%in% names(metadat),
+    "Obs_length"%in% names(metadat),
+    "Plot"      %in% names(metadat)
+  )
+
+  stopifnot(all(metadat$Obs_length > 0, na.rm = TRUE))
+  stopifnot(anyDuplicated(metadat$Plot) == 0)
+ # Instruments present in BOTH datasets
+  instruments <- intersect(
+    unique(alldat$SN),
+    unique(metadat$SN)
+  )
+  message("Instruments to process: ", paste(instruments, collapse = ", "))
+  results <- lapply(instruments, function(sn) {
+    message("Processing SN: ", sn)
+    dat_i <- alldat %>%
+      filter(SN == sn)
+    meta_i <- metadat %>%
+      filter(SN == sn) %>%
+      arrange(Date, Time_start) %>%
+      mutate(metadat_row = row_number())
+    stopifnot(nrow(meta_i) > 0)
+  # Actual matching 
+    dat_i$metadat_row <- ffi_metadata_match(
+      data_timestamps = dat_i$TIMESTAMP,
+      start_dates     = meta_i$Date,
+      start_times     = meta_i$Time_start,
+      obs_lengths     = meta_i$Obs_length  )
+  # Attach metadata (vectorized, fast)
+    dat_i <- dat_i %>%
+      mutate(
+        Plot      = meta_i$Plot[metadat_row],
+        Volume    = meta_i$Volume[metadat_row],
+        Temp      = meta_i$Temp[metadat_row],
+        Area      = meta_i$Area[metadat_row],
+        Dead_band = meta_i$Dead_band[metadat_row]      )
+  # Drop unmatched rows
+    n_before <- nrow(dat_i)
+    dat_i <- dat_i %>% filter(!is.na(metadat_row))
+    n_after <- nrow(dat_i)
+    message("  Matched rows: ", n_after, " / ", n_before)
+    dat_i })
+  alldat_matched <- rbindlist(results, fill = TRUE)
+  #Final sanity checks 
+  stopifnot(
+    !anyNA(alldat_matched$Plot),
+    nrow(alldat_matched) > 0
+  )
+  message("Matching finished successfully")
+  return(alldat_matched)}
+
+#running the funciton
+message("Running final metadata matching...")
+alldat_matched <- match_flux_metadata(alldat, metadat)
+message("Matched dataset rows: ", nrow(alldat_matched))
+head(alldat_matched)
+
+#saving matched data and metadata as raw data is too big (today, Licor files leave in the COMPASS drive)
+saveRDS(alldat_matched, file = "alldat_matched_2022.rds")
+
+#can remove any row that have NA's in the CH4 column 
+#alldat <- alldat %>%
+ # filter(!is.na(CH4))
+
+```
+
+## Temperature from weather station
+
+```{r}
+# I need to go back here to get temp from the weather station
+```
+
+## fixing some Deadbands
+
+```{#r}
+# Table of plots with custom deadband adjustments
+ deadband_overrides <- tibble::tibble(
+  Plot = c(),
+  DeadBand_override = c(
+  )
+)
+
+# Default deadband
+alldat_matched <- alldat_matched %>%
+  mutate(
+    DeadBand_used = as.numeric(Dead_band),
+    DeadBand_used = if_else(
+      is.na(DeadBand_used),
+      0,
+      DeadBand_used    )
+  )
+
+# # Apply per-plot overrides
+alldat_matched <- alldat_matched %>%
+  left_join(deadband_overrides, by = "Plot") %>%
+  mutate(
+    DeadBand_used = if_else(
+      !is.na(DeadBand_override),
+      DeadBand_override,
+      DeadBand_used
+    )
+  ) %>%
+  select(-DeadBand_override)
+
+
+```
+
+## Calculate fluxes
+
+```{r}
+
+# TO Do - NEED TO PULL TEMP from the weather station
+#change the units
+alldat_matched $CH4_nmol <- ffi_ppb_to_nmol(alldat_matched$CH4, 
+                                volume = alldat_matched$Volume, # m3
+                                temp = alldat_matched$Temp)    # degrees C
+#> Assuming atm = 101325 Pa
+#> Using R = 8.31446261815324 m3 Pa K-1 mol-1
+
+alldat_matched $CH4_nmol_m2 <- alldat_matched $CH4_nmol / 0.16
+
+fluxes <- ffi_compute_fluxes(alldat_matched ,
+                             group_column = "Plot", 
+                             time_column = "TIMESTAMP", 
+                             gas_column = "CH4_nmol_m2", 
+                             dead_band = 0)
+head(fluxes)
+
+#take a look at the fluxes we calculated with R2 
+ggplot(fluxes, aes(Plot, lin_flux.estimate, color = lin_r.squared)) +
+  geom_point(size=4) + theme_classic() + 
+  geom_linerange(aes(ymin = lin_flux.estimate- lin_flux.std.error,
+                   ymax = lin_flux.estimate+ lin_flux.std.error)) +
+  scale_color_gradientn(colours = c("darkred",  "red", "white","lightblue", "darkblue"),
+                        values = c(0, 0.5, 0.6, 0.7, 1)) +
+  ylab("CH4 flux (nmol/m2/s)")
+
+#sort fluxes by R2 
+fluxes_good <- as.data.frame(subset(fluxes, lin_r.squared >= .90, select = Plot:TIMESTAMP_max))
+fluxes_lowr2 <- as.data.frame(subset(fluxes, lin_r.squared < .90 & lin_flux.estimate < 1, select = Plot:TIMESTAMP_max))
+fluxes_weird <- as.data.frame(subset(fluxes, lin_r.squared < .90, select = Plot:TIMESTAMP_max))
+
+#find fluxes that represent the first and fourth quartile of the data 
+low <- quantile(fluxes$lin_flux.estimate, 0.05) 
+high <- quantile(fluxes$lin_flux.estimate, 0.95) 
+
+fluxes_low <- as.data.frame(subset(fluxes, lin_flux.estimate <= low, select = Plot:TIMESTAMP_max))
+fluxes_high <- as.data.frame(subset(fluxes, lin_flux.estimate >= high, select = Plot:TIMESTAMP_max))
+
+tails <- rbind(fluxes_low, fluxes_high)
+```
+
+## check the fluxes for which I changed the start time due to lags or high values (recorded in notes of metadata)
+
+```{r}
+#### If something is in a V shape should we take the second part to make a positive linear curve?
+
+# Subset data and create relative time (seconds since flux start)
+# r_all <- alldat %>%
+#   filter(Plot %in% deadband_overrides$Plot) %>%
+#   group_by(Plot) %>%
+#   mutate(
+#     time_sec = as.numeric(
+#       difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")
+#     )
+#   ) %>%
+#   ungroup()
+# 
+# 
+# # Random sample of plots for visualization
+# plots_sample <- sample(unique(r_all$Plot), 6,replace = FALSE)
+# 
+# r_plot <- r_all %>%
+#   filter(Plot %in% plots_sample)
+# 
+# # Plot
+# ggplot(
+#   r_plot,
+#   aes(
+#     x = TIMESTAMP,
+#     y = co2,
+#     color = time_sec >= DeadBand_used
+#   )
+# ) +
+#   geom_point(size = 1.8) +
+#   facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +
+#   scale_color_manual(
+#     values = c("grey60", "red"),
+#     labels = c("Discarded (deadband)", "Used after deadband")
+#   ) +
+#   theme_classic() +
+#   ylab(expression(paste(CO[2], " (ppm)"))) +
+#   xlab("Time")
+```
+
+## Spot check a few fluxes with R2 \> 0.9
+
+```{r, echo=FALSE}
+
+### pull a random sample of good fluxes to check and plot 
+good_plots <- unique(fluxes_good$Plot)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+good_sample <- sample(good_plots, 9, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in good_sample){ 
+  r1 <- subset(alldat_matched, Plot == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), CH4)) + geom_point() + 
+  scale_x_datetime(breaks = "15 sec") + 
+  theme_classic() +
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) + 
+  geom_smooth()
+  print(p1)
+  }
+
+####################
+
+```
+
+## Take a look at the fluxes \<0.9 and a flux estimate below 1
+
+```{r, echo = FALSE}
+
+####Do we just leave these alone because the fluxes are so low?####
+
+### pull out fluxes with R2 < 0.9 and put them in a list 
+low_plots <- unique(fluxes_lowr2$Plot)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+low_sample <- sample(low_plots, 5, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in low_sample){ 
+  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
+  scale_x_datetime(breaks = "15 sec") + 
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) + 
+  geom_smooth()
+  print(p1)
+  }
+
+####################
+```
+
+## Take a look at the bad fluxes \<0.9 and have a high flux estimate
+
+## See if we want to remove these fluxes or if we want to try and recalculate these ones?
+
+```{r}
+### pull out fluxes with R2 < 0.9 and put them in a list 
+bad_plots <- unique(fluxes_weird$Plot)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+bad_sample <- sample(bad_plots, 5, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in bad_sample){ 
+  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
+  scale_x_datetime(breaks = "15 sec") + 
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) +
+  geom_smooth()
+  print(p1)
+  }
+
+####################
+```
+
+## Look at the really high or really low ones to see if there is a timing issue or something
+
+```{r}
+### pull out fluxes in the 5% and 95% tails to look at really high and really low 
+tail_plots <- unique(tails$Plot)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+tail_sample <- sample(tail_plots, 2, replace=FALSE)
+
+#Loop to run five random plots subset above 
+for(P in tail_sample){ 
+  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
+  scale_x_datetime(breaks = "15 sec") + 
+  ylab(expression(paste( CH4 [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) + 
+  geom_smooth()
+  print(p1)
+  }
+
+#would be nice to put on the plot the flux estimate and if it is a high or low or something 
+####################
+```
+
+## Check all fluxes
+
+```{r}
+##Put all fluxes together
+fluxes_all <- as.data.frame(subset(fluxes, select = Plot:TIMESTAMP_max))
+
+all_plots <- unique(fluxes_all$Plot)
+
+# take a random sample (FALSE so we don't get the same plot twice)
+# set.seed(...) to guarantee reproducibility
+all_sample <- sample(all_plots, 5, replace=FALSE)
+
+#Loop to run five random plots subset above
+for(P in all_sample){
+  r1 <- subset(alldat_matched, Plot== P & !is.na(metadat_row))
+  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
+  scale_x_datetime(breaks = "15 sec") +
+  ylab(expression(paste( CH [4], " (ppb)"))) +
+  xlab("Time") + labs(title = P) +
+  geom_smooth(color="red")
+  print(p1)
+  }
+
+####################
+```
+
+## Remove any fluxes that do not fit criteria
+
+```{r}
+
+# Create a new dataframe by removing rows that were present in fluxes_weird ???
+#allflux_filtered <- allflux[!(allflux$Plot %in% fluxes_weird$Plo), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad
+
+#Any others that are not in the weird category that need to be removed: 
+  #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
+
+allflux_filtered <- fluxes_all #%>%
+#   filter(!Plot %in% c( disturbed during measurement?
+#                       ))
+# 
+# 
+# # View the result
+# head(allflux_filtered)
+```
+
+## Do some visualization of QAQC plots to assess fluxes
+
+```{r}
+
+p1 <- ggplot(fluxes, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
+  geom_point(size=4) + geom_abline() + 
+  theme_classic() + 
+  labs(title = "A") + 
+  ylab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Robust Method"))) +
+  xlab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Linear Method"))) +
+  guides(color = guide_legend(title = "Plot")) +
+  theme(legend.position="none") +
+  theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
+        axis.title.y = element_text(size=12), legend.text=element_text(size=12),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth =1), 
+        aspect.ratio = 1)
+p1
+
+p2 <- ggplot(fluxes, aes(lin_r.squared, poly_r.squared, color = Plot)) +
+  geom_point(size=4) + geom_abline() + 
+  theme_classic() + 
+  xlim(0,1) + ylim(0,1) +
+  labs(title = "B") + 
+  ylab(expression(paste("R"^2* " Second-Order Polynomial"))) +
+  xlab(expression(paste("R"^2* " Linear Model"))) +
+  guides(color = guide_legend(title = "Plot_ID")) + 
+  theme(legend.position="none") +
+  theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
+        axis.title.y = element_text(size=12), legend.text=element_text(size=12),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth =1), 
+        aspect.ratio = 1)
+p2
+
+p3 <- ggplot(fluxes, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+  geom_point(size=4) + geom_abline() + 
+  theme_classic() + 
+  #xlim(0,50) + #ylim(0,50) +
+  labs(title = "C") + 
+  ylab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") HM1981 Method"))) +
+  xlab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Linear Method"))) +
+  guides(color = guide_legend(title = "Plot_ID")) + 
+  theme(legend.position="right") +
+  theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
+        axis.title.y = element_text(size=12), legend.text=element_text(size=12),
+        panel.border = element_rect(colour = "black", fill=NA, linewidth =1), 
+        aspect.ratio = 1)
+
+p3
+
+#ggarrange(p1, p2, p3, ncol=3, nrow=1, common.legend = TRUE, legend="none")
+```
+
+## Read out final dataframe and export for use elsewhere
+
+```{r}
+
+allflux_filtered_renamed <- fluxes %>%
+  mutate(
+    Date = mdy(str_extract(Plot, "^[0-9]+/[0-9]+/[0-9]{4}")),
+    Month = month.abb[month(Date)],
+    Site = str_extract(Plot, "(PTR|OWC|CRC)"),
+    Zone = str_extract(Plot, "_TR_|_UP_") %>%
+      str_remove_all("_"),
+    Replicate = as.integer(
+      str_extract(Plot, "(?<=_(TR|UP)_)[0-9]+")
+    ),
+   Plot_ID = as.integer(
+      str_extract(Plot, "[0-9]+$")) ) %>%
+  
+  # Optional: rebuild a clean Plot label
+  mutate(
+    Plot_clean = paste(
+      format(Date, "%Y-%m-%d"),
+      Site,
+      Zone,
+      Replicate,
+      Plot_ID,
+      sep = "_"
+    )
+  ) %>%
+  
+  select(
+    Plot_clean,
+    Date,
+    Month,
+    Site,
+    Zone,
+    Replicate,
+    Plot_ID,
+    everything(),
+    -Plot
+  )
+
+
+
+#export as a csv to the folder that you want
+write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2022_CH4.csv", row.names = FALSE)
+# #Change file name
+```
+
+## 

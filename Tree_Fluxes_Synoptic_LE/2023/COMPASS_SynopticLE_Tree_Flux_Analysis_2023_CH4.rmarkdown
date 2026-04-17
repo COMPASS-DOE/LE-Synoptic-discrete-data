@@ -1,7 +1,7 @@
 ---
-title: "COMPASS_Synoptic_LE_Tree_GHG_Flux_Calcs"
+title: "COMPASS_Synoptic_LE_Tree_Flux_Calcs_2023_CH4"
 author: "Roberta Peixoto"
-date: "2026-04-14"
+date: "2026-04-17"
 output: 
   html_document:
     self_contained: true 
@@ -23,7 +23,7 @@ lapply(c( "fluxfinder", "readxl",
 ```{r}
 #defining where the raw data is
 
-DATA_DIR_ROOT <- file.path(
+DATA_DIR_ROOT <- here::here(
   "Tree_Fluxes_Synoptic_LE",
   "2022",
   "Raw Data"
@@ -88,19 +88,21 @@ message("Final number of rows: ", nrow(alldat))
 
 # Show result
 print(head(alldat))
+
+
 ```
 
 ## Read in metadata file and match to raw data
 
 ```{r}
-md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2022b.csv"
+md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2023.csv"
 dat <- read.csv(md)
 
 metadat <- dat %>%
   # Remove rows without date
   filter(!is.na(Date)) %>%
   # Keep only desired instruments
-  filter(SN %in% c("TG10-01448", "TG10-01426")) %>%
+  filter(SN %in% c("TG10-01448", "TG10-01426", "TG10-01028")) %>%
   # Normalize Plot labels
   mutate(
     Plot_raw = toupper(Plot),
@@ -137,7 +139,7 @@ head(metadat$Plot)
 
 ```
 
-## Check start times overlaps
+## Check start times overlapsor missing values
 
 ```{r}
 
@@ -169,14 +171,32 @@ overlaps_detected <- metadat %>%
     Obs_length
   )
 
-overlaps_detected
+print(overlaps_detected)
+
+#checking problems with obs_length - this is a frequent bug for manual field notes 
+field_notes_overlap<-metadat %>%
+  mutate(
+    obs_problem =
+      is.na(Obs_length) | Obs_length <= 0
+  ) %>%
+  filter(obs_problem) %>%
+  select(
+    SN,
+    Date,
+    Plot,
+    Time_start,
+    Stop.time,
+    Obs_length
+  )
+
+print(field_notes_overlap)
 
 # checking unique measurment start time and stop time
 # alldat %>%
 #     filter(
 #         SN == "TG10-01448",
-#         TIMESTAMP > as.POSIXct("2023-01-05 13:28:00", tz = "EST"),
-#         TIMESTAMP < as.POSIXct("2023-01-05 13:33:00", tz = "EST")
+#         TIMESTAMP > as.POSIXct("2023-01-05 13:28:00"),
+#         TIMESTAMP < as.POSIXct("2023-01-05 13:33:00")
 #     ) %>%
 #     ggplot(aes(x = TIMESTAMP, y = CO2)) +
 #     geom_point()#+ylim(300,500)
@@ -251,6 +271,9 @@ alldat_matched <- match_flux_metadata(alldat, metadat)
 message("Matched dataset rows: ", nrow(alldat_matched))
 head(alldat_matched)
 
+#saving matched data and metadata as raw data is too big (today, Licor files leave in the COMPASS drive)
+saveRDS(alldat_matched, file = "alldat_matched_2023.rds")
+
 
 #can remove any row that have NA's in the CH4 column 
 #alldat <- alldat %>%
@@ -261,7 +284,7 @@ head(alldat_matched)
 ## Temperature from weather station
 
 ```{r}
-
+# I need to go back here to get temp from the weather station
 ```
 
 ## fixing some Deadbands
@@ -324,15 +347,15 @@ alldat_matched <- alldat_matched %>%
 
 ```{r}
 
-# NEED TO PULL TEMP from the weather station
+# TO Do - NEED TO PULL TEMP from the weather station
 #change the units
-alldat_matched $CH4_nmol <- ffi_ppb_to_nmol(alldat_matched $CH4, 
-                                volume = alldat_matched $Volume, # m3
-                                temp = alldat_matched $Temp)    # degrees C
+alldat_matched$CH4_nmol <- ffi_ppb_to_nmol(alldat_matched$CH4, 
+                                volume = alldat_matched$Volume, # m3
+                                temp = alldat_matched$Temp)    # degrees C
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_matched $CH4_nmol_m2 <- alldat_matched $CH4_nmol / 0.16
+alldat_matched$CH4_nmol_m2 <- alldat_matched$CH4_nmol / 0.16
 
 fluxes <- ffi_compute_fluxes(alldat_matched ,
                              group_column = "Plot", 
@@ -656,8 +679,9 @@ allflux_filtered_renamed <- fluxes %>%
 
 
 #export as a csv to the folder that you want
-write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2022_2023_CH4.csv", row.names = FALSE)
+write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2023_CH4.csv", row.names = FALSE)
 # #Change file name
 ```
 
 ## 
+
