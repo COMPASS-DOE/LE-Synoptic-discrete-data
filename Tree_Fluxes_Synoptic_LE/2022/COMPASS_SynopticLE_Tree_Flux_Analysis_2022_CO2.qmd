@@ -1,7 +1,7 @@
 ---
 title: "COMPASS_Synoptic_LE_Tree_CO2_Flux_Calcs_2022"
 author: "Roberta Peixoto"
-date: "2026-04-17"
+date: "`r Sys.Date()`"
 output: 
   html_document:
     self_contained: true 
@@ -290,6 +290,8 @@ saveRDS(alldat_matched, file = "alldat_matched_2022.rds")
 ## fixing some Deadbands
 
 ```{#r}
+
+# need to include a way to adjust the stop time too
 # Table of plots with custom deadband adjustments
  deadband_overrides <- tibble::tibble(
   Plot = c(),
@@ -551,20 +553,19 @@ for(P in all_sample){
 #Any others that are not in the weird category that need to be removed: 
   #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
 
-allflux_filtered <- fluxes_all #%>%
-#   filter(!Plot %in% c( disturbed during measurement?
-#                       ))
-# 
-# 
+allflux_filtered <- fluxes %>%
+   filter(!Plot %in% c("2022_08_17_OWC_UP_7_148","2022_11_24_OWC_TR_123_43"))
+ 
+ 
 # # View the result
-# head(allflux_filtered)
+ head(allflux_filtered)
 ```
 
 ## Do some visualization of QAQC plots to assess fluxes
 
 ```{r}
 
-p1 <- ggplot(fluxes, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
+p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   labs(title = "A") + 
@@ -578,7 +579,7 @@ p1 <- ggplot(fluxes, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
         aspect.ratio = 1)
 p1
 
-p2 <- ggplot(fluxes, aes(lin_r.squared, poly_r.squared, color = Plot)) +
+p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   xlim(0,1) + ylim(0,1) +
@@ -593,7 +594,7 @@ p2 <- ggplot(fluxes, aes(lin_r.squared, poly_r.squared, color = Plot)) +
         aspect.ratio = 1)
 p2
 
-p3 <- ggplot(fluxes, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+p3 <- ggplot(allflux_filtered, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   #xlim(0,50) + #ylim(0,50) +
@@ -652,6 +653,7 @@ allflux_filtered_renamed <- fluxes %>%
     everything(),
     -Plot
   )
+
 
 
 
