@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Roberta Peixoto">
-<meta name="dcterms.date" content="2026-04-17">
+<meta name="dcterms.date" content="2026-04-22">
 
 <title>COMPASS_Synoptic_LE_Tree_Flux_Calcs_2023_CH4</title>
 <style>
@@ -101,7 +101,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 17, 2026</p>
+      <p class="date">April 22, 2026</p>
     </div>
   </div>
   
@@ -132,12 +132,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>now <span class="ot">&lt;-</span> <span class="cf">function</span>() <span class="fu">format</span>(<span class="fu">Sys.time</span>(), <span class="st">"%Y-%m-%d %H:%M:%S"</span>)</span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="fu">now</span>(), <span class="st">" | Script started"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>2026-04-20 09:40:03 | Script started</code></pre>
+<pre><code>2026-04-22 14:38:14 | Script started</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#finding the zip files</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="fu">now</span>(), <span class="st">" | Looking for ZIP files in: "</span>, DATA_DIR_ROOT)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>2026-04-20 09:40:03 | Looking for ZIP files in: D:/GitHub/LE-Synoptic-discrete-data/Tree_Fluxes_Synoptic_LE/2022/Raw Data</code></pre>
+<pre><code>2026-04-22 14:38:14 | Looking for ZIP files in: D:/GitHub/LE-Synoptic-discrete-data/Tree_Fluxes_Synoptic_LE/2022/Raw Data</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>zip_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  DATA_DIR_ROOT,</span>
@@ -146,7 +146,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="fu">now</span>(), <span class="st">" | ZIP files found: "</span>, <span class="fu">length</span>(zip_files))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>2026-04-20 09:40:03 | ZIP files found: 1</code></pre>
+<pre><code>2026-04-22 14:38:14 | ZIP files found: 1</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(zip_files)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -191,11 +191,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="co"># ACTUAL EXECUTION </span></span>
 <span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="fu">now</span>(), <span class="st">" | Starting data read"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>2026-04-20 09:40:03 | Starting data read</code></pre>
+<pre><code>2026-04-22 14:38:14 | Starting data read</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>alldat_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(zip_files, read_li7810_zip)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>2026-04-20 09:40:03 | Processing ZIP: TG10-01028-TG10-01448-TG10-01426.zip</code></pre>
+<pre><code>2026-04-22 14:38:14 | Processing ZIP: TG10-01028-TG10-01448-TG10-01426.zip</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>  -&gt; .data files found: 13</code></pre>
@@ -284,7 +284,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>alldat <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">rbindlist</span>(alldat_list, <span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="fu">now</span>(), <span class="st">" | DONE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>2026-04-20 09:42:47 | DONE</code></pre>
+<pre><code>2026-04-22 14:41:00 | DONE</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Final number of rows: "</span>, <span class="fu">nrow</span>(alldat))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
@@ -343,35 +343,47 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
 <span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">Plot_raw =</span> <span class="fu">toupper</span>(Plot),</span>
 <span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract plot components </span></span>
-<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">Site =</span> <span class="fu">str_extract</span>(Plot_raw, <span class="st">"^[A-Z]{3}"</span>),</span>
-<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">Zone =</span> <span class="fu">str_extract</span>(Plot_raw, <span class="st">"(TR|UP)"</span>),</span>
-<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">Replicate =</span> <span class="fu">str_extract</span>(Plot_raw, <span class="st">"(?&lt;=TR|UP)[0-9]+"</span>),</span>
-<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Letter ONLY if it comes AFTER a number</span></span>
-<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">Letter =</span> <span class="fu">str_extract</span>(Plot_raw, <span class="st">"(?&lt;=[0-9])[A-Z]$"</span>),</span>
-<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Time normalization</span></span>
-<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">Time_start =</span> <span class="fu">str_replace_all</span>(<span class="fu">as.character</span>(Time_start), <span class="st">"</span><span class="sc">\\</span><span class="st">."</span>, <span class="st">":"</span>) <span class="sc">|&gt;</span> <span class="fu">str_trim</span>(),</span>
-<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">Stop.time  =</span> <span class="fu">str_replace_all</span>(<span class="fu">as.character</span>(Stop.time),  <span class="st">"</span><span class="sc">\\</span><span class="st">."</span>, <span class="st">":"</span>) <span class="sc">|&gt;</span> <span class="fu">str_trim</span>(),</span>
-<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Safe time parsing (NO WARNINGS) </span></span>
-<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">t_start =</span> <span class="fu">suppressWarnings</span>(<span class="fu">parse_date_time</span>(Time_start, <span class="at">orders =</span> <span class="fu">c</span>(<span class="st">"H:M:S"</span>, <span class="st">"H:M"</span>))),</span>
-<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">t_stop  =</span> <span class="fu">suppressWarnings</span>(<span class="fu">parse_date_time</span>(Stop.time,  <span class="at">orders =</span> <span class="fu">c</span>(<span class="st">"H:M:S"</span>, <span class="st">"H:M"</span>))),</span>
-<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Observation length</span></span>
-<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">Obs_length =</span> <span class="fu">as.numeric</span>(t_stop <span class="sc">-</span> t_start, <span class="at">units =</span> <span class="st">"secs"</span>),</span>
-<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Timestamp</span></span>
-<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">TIMESTAMP =</span> <span class="fu">as.POSIXct</span>(</span>
-<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Time_start),</span>
-<span id="cb47-29"><a href="#cb47-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">format =</span> <span class="st">"%m/%d/%Y %H:%M:%S"</span>,</span>
-<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">tz =</span> <span class="st">"EST"</span></span>
-<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb47-32"><a href="#cb47-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Sequential ID</span></span>
-<span id="cb47-33"><a href="#cb47-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">Seq =</span> <span class="fu">row_number</span>(),</span>
-<span id="cb47-34"><a href="#cb47-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># INAL standardized Plot label</span></span>
-<span id="cb47-35"><a href="#cb47-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">Plot =</span> <span class="fu">if_else</span>(</span>
-<span id="cb47-36"><a href="#cb47-36" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(Letter),</span>
-<span id="cb47-37"><a href="#cb47-37" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Site, Zone, Replicate, Seq, <span class="at">sep =</span> <span class="st">"_"</span>),</span>
-<span id="cb47-38"><a href="#cb47-38" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Site, Zone, Replicate, Letter, Seq, <span class="at">sep =</span> <span class="st">"_"</span>)) )</span>
-<span id="cb47-39"><a href="#cb47-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-40"><a href="#cb47-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Quick check</span></span>
-<span id="cb47-41"><a href="#cb47-41" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(metadat<span class="sc">$</span>Plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Site = str_extract(Plot_raw, "^[A-Z]{3}"),</span></span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Zone = str_extract(Plot_raw, "(TR|UP)"), # somehow all of the PTR measurements turned into TR</span></span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">Site =</span> <span class="fu">toupper</span>(Site),</span>
+<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">Zone =</span> <span class="fu">toupper</span>(Zone), </span>
+<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">Replicate =</span> <span class="fu">str_extract</span>(Plot_raw, <span class="st">"(?&lt;=(TR|UP))[0-9]+"</span>) <span class="sc">|&gt;</span> <span class="fu">as.integer</span>(),</span>
+<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Letter ONLY if it comes AFTER a number</span></span>
+<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">Letter =</span> <span class="fu">str_extract</span>(Plot_raw, <span class="st">"(?&lt;=[0-9])[A-Z]$"</span>),</span>
+<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Time normalization</span></span>
+<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">Time_start =</span> <span class="fu">str_replace_all</span>(<span class="fu">as.character</span>(Time_start), <span class="st">"</span><span class="sc">\\</span><span class="st">."</span>, <span class="st">":"</span>) <span class="sc">|&gt;</span> <span class="fu">str_trim</span>(),</span>
+<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">Stop.time  =</span> <span class="fu">str_replace_all</span>(<span class="fu">as.character</span>(Stop.time),  <span class="st">"</span><span class="sc">\\</span><span class="st">."</span>, <span class="st">":"</span>) <span class="sc">|&gt;</span> <span class="fu">str_trim</span>(),</span>
+<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Safe time parsing (NO WARNINGS) </span></span>
+<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">t_start =</span> <span class="fu">suppressWarnings</span>(<span class="fu">parse_date_time</span>(Time_start, <span class="at">orders =</span> <span class="fu">c</span>(<span class="st">"H:M:S"</span>, <span class="st">"H:M"</span>))),</span>
+<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">t_stop  =</span> <span class="fu">suppressWarnings</span>(<span class="fu">parse_date_time</span>(Stop.time,  <span class="at">orders =</span> <span class="fu">c</span>(<span class="st">"H:M:S"</span>, <span class="st">"H:M"</span>))),</span>
+<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Observation length</span></span>
+<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">Obs_length =</span> <span class="fu">as.numeric</span>(t_stop <span class="sc">-</span> t_start, <span class="at">units =</span> <span class="st">"secs"</span>),</span>
+<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Timestamp</span></span>
+<span id="cb47-29"><a href="#cb47-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">TIMESTAMP =</span> <span class="fu">as.POSIXct</span>(</span>
+<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Time_start),</span>
+<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">format =</span> <span class="st">"%m/%d/%Y %H:%M:%S"</span>,</span>
+<span id="cb47-32"><a href="#cb47-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">tz =</span> <span class="st">"EST"</span></span>
+<span id="cb47-33"><a href="#cb47-33" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb47-34"><a href="#cb47-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Sequential ID</span></span>
+<span id="cb47-35"><a href="#cb47-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">Seq =</span> <span class="fu">row_number</span>(),</span>
+<span id="cb47-36"><a href="#cb47-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># INAL standardized Plot label</span></span>
+<span id="cb47-37"><a href="#cb47-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">Plot =</span> <span class="fu">if_else</span>(</span>
+<span id="cb47-38"><a href="#cb47-38" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(Letter),</span>
+<span id="cb47-39"><a href="#cb47-39" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Site, Zone, Replicate, Seq, <span class="at">sep =</span> <span class="st">"_"</span>),</span>
+<span id="cb47-40"><a href="#cb47-40" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Site, Zone, Replicate, Letter, Seq, <span class="at">sep =</span> <span class="st">"_"</span>)) )</span>
+<span id="cb47-41"><a href="#cb47-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-42"><a href="#cb47-42" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">count</span>(metadat, Site, Zone)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Site Zone  n
+1  CRC   TR 60
+2  CRC   UP 53
+3  OWC   TR 57
+4  OWC   UP 55
+5  PTR   TR 24
+6  PTR   UP 25</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Quick check</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(metadat<span class="sc">$</span>Plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "1/5/2023_OWC_UP_101_1" "1/5/2023_OWC_UP_102_2" "1/5/2023_OWC_UP_103_3"
 [4] "1/5/2023_OWC_UP_104_4" "1/5/2023_OWC_UP_105_5" "1/5/2023_OWC_UP_106_6"</code></pre>
@@ -381,141 +393,141 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="check-start-times-overlapsor-missing-values" class="level2">
 <h2 class="anchored" data-anchor-id="check-start-times-overlapsor-missing-values">Check start times overlapsor missing values</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co">#checking if there is any start and stop time overlap from the field notes</span></span>
-<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>overlaps_detected <span class="ot">&lt;-</span> metadat <span class="sc">%&gt;%</span></span>
-<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">start_ts =</span> <span class="fu">as.POSIXct</span>(</span>
-<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Time_start),</span>
-<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">format =</span> <span class="st">"%m/%d/%Y %H:%M:%S"</span>,</span>
-<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">tz =</span> <span class="st">"EST"</span></span>
-<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">end_ts =</span> start_ts <span class="sc">+</span> Obs_length</span>
-<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(SN, start_ts) <span class="sc">%&gt;%</span></span>
-<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(SN) <span class="sc">%&gt;%</span></span>
-<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">next_plot     =</span> <span class="fu">lead</span>(Plot),</span>
-<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">next_start_ts =</span> <span class="fu">lead</span>(start_ts),</span>
-<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">overlap_ffi   =</span> <span class="sc">!</span><span class="fu">is.na</span>(next_start_ts) <span class="sc">&amp;</span> next_start_ts <span class="sc">&lt;=</span> end_ts</span>
-<span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb49-18"><a href="#cb49-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(overlap_ffi) <span class="sc">%&gt;%</span></span>
-<span id="cb49-19"><a href="#cb49-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
-<span id="cb49-20"><a href="#cb49-20" aria-hidden="true" tabindex="-1"></a>    SN,</span>
-<span id="cb49-21"><a href="#cb49-21" aria-hidden="true" tabindex="-1"></a>    Plot,</span>
-<span id="cb49-22"><a href="#cb49-22" aria-hidden="true" tabindex="-1"></a>    start_ts,</span>
-<span id="cb49-23"><a href="#cb49-23" aria-hidden="true" tabindex="-1"></a>    end_ts,</span>
-<span id="cb49-24"><a href="#cb49-24" aria-hidden="true" tabindex="-1"></a>    next_plot,</span>
-<span id="cb49-25"><a href="#cb49-25" aria-hidden="true" tabindex="-1"></a>    next_start_ts,</span>
-<span id="cb49-26"><a href="#cb49-26" aria-hidden="true" tabindex="-1"></a>    Obs_length</span>
-<span id="cb49-27"><a href="#cb49-27" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb49-28"><a href="#cb49-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-29"><a href="#cb49-29" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(overlaps_detected)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co">#checking if there is any start and stop time overlap from the field notes</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>overlaps_detected <span class="ot">&lt;-</span> metadat <span class="sc">%&gt;%</span></span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">start_ts =</span> <span class="fu">as.POSIXct</span>(</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste</span>(Date, Time_start),</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">format =</span> <span class="st">"%m/%d/%Y %H:%M:%S"</span>,</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">tz =</span> <span class="st">"EST"</span></span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">end_ts =</span> start_ts <span class="sc">+</span> Obs_length</span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(SN, start_ts) <span class="sc">%&gt;%</span></span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(SN) <span class="sc">%&gt;%</span></span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">next_plot     =</span> <span class="fu">lead</span>(Plot),</span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">next_start_ts =</span> <span class="fu">lead</span>(start_ts),</span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">overlap_ffi   =</span> <span class="sc">!</span><span class="fu">is.na</span>(next_start_ts) <span class="sc">&amp;</span> next_start_ts <span class="sc">&lt;=</span> end_ts</span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(overlap_ffi) <span class="sc">%&gt;%</span></span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb51-20"><a href="#cb51-20" aria-hidden="true" tabindex="-1"></a>    SN,</span>
+<span id="cb51-21"><a href="#cb51-21" aria-hidden="true" tabindex="-1"></a>    Plot,</span>
+<span id="cb51-22"><a href="#cb51-22" aria-hidden="true" tabindex="-1"></a>    start_ts,</span>
+<span id="cb51-23"><a href="#cb51-23" aria-hidden="true" tabindex="-1"></a>    end_ts,</span>
+<span id="cb51-24"><a href="#cb51-24" aria-hidden="true" tabindex="-1"></a>    next_plot,</span>
+<span id="cb51-25"><a href="#cb51-25" aria-hidden="true" tabindex="-1"></a>    next_start_ts,</span>
+<span id="cb51-26"><a href="#cb51-26" aria-hidden="true" tabindex="-1"></a>    Obs_length</span>
+<span id="cb51-27"><a href="#cb51-27" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb51-28"><a href="#cb51-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-29"><a href="#cb51-29" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(overlaps_detected)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 0 × 7
 # Groups:   SN [0]
 # ℹ 7 variables: SN &lt;chr&gt;, Plot &lt;chr&gt;, start_ts &lt;dttm&gt;, end_ts &lt;dttm&gt;,
 #   next_plot &lt;chr&gt;, next_start_ts &lt;dttm&gt;, Obs_length &lt;dbl&gt;</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co">#checking problems with obs_length - this is a frequent bug for manual field notes </span></span>
-<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>field_notes_overlap<span class="ot">&lt;-</span>metadat <span class="sc">%&gt;%</span></span>
-<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">obs_problem =</span></span>
-<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(Obs_length) <span class="sc">|</span> Obs_length <span class="sc">&lt;=</span> <span class="dv">0</span></span>
-<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(obs_problem) <span class="sc">%&gt;%</span></span>
-<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
-<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>    SN,</span>
-<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>    Date,</span>
-<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>    Plot,</span>
-<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>    Time_start,</span>
-<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>    Stop.time,</span>
-<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a>    Obs_length</span>
-<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(field_notes_overlap)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co">#checking problems with obs_length - this is a frequent bug for manual field notes </span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>field_notes_overlap<span class="ot">&lt;-</span>metadat <span class="sc">%&gt;%</span></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">obs_problem =</span></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(Obs_length) <span class="sc">|</span> Obs_length <span class="sc">&lt;=</span> <span class="dv">0</span></span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(obs_problem) <span class="sc">%&gt;%</span></span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>    SN,</span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>    Date,</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>    Plot,</span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>    Time_start,</span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a>    Stop.time,</span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>    Obs_length</span>
+<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(field_notes_overlap)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] SN         Date       Plot       Time_start Stop.time  Obs_length
 &lt;0 rows&gt; (or 0-length row.names)</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># checking unique measurment start time and stop time</span></span>
-<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="co"># alldat %&gt;%</span></span>
-<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="co">#     filter(</span></span>
-<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a><span class="co">#         SN == "TG10-01448",</span></span>
-<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a><span class="co">#         TIMESTAMP &gt; as.POSIXct("2023-01-05 13:28:00"),</span></span>
-<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a><span class="co">#         TIMESTAMP &lt; as.POSIXct("2023-01-05 13:33:00")</span></span>
-<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     ) %&gt;%</span></span>
-<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     ggplot(aes(x = TIMESTAMP, y = CO2)) +</span></span>
-<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a><span class="co">#     geom_point()#+ylim(300,500)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># checking unique measurment start time and stop time</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="co"># alldat %&gt;%</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="co">#     filter(</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="co">#         SN == "TG10-01448",</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="co">#         TIMESTAMP &gt; as.POSIXct("2023-01-05 13:28:00"),</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="co">#         TIMESTAMP &lt; as.POSIXct("2023-01-05 13:33:00")</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     ) %&gt;%</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     ggplot(aes(x = TIMESTAMP, y = CO2)) +</span></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="co">#     geom_point()#+ylim(300,500)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="match-metadata-to-raw-data" class="level2">
 <h2 class="anchored" data-anchor-id="match-metadata-to-raw-data">Match metadata to raw data</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co">#function to match data per equipment (considering different serial numbers) uhul!</span></span>
-<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>match_flux_metadata <span class="ot">&lt;-</span> <span class="cf">function</span>(alldat, metadat) {</span>
-<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"Starting metadata ↔ Licor matching"</span>)</span>
-<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#Sanity checks (fail early)</span></span>
-<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(</span>
-<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"TIMESTAMP"</span> <span class="sc">%in%</span> <span class="fu">names</span>(alldat),</span>
-<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"SN"</span>        <span class="sc">%in%</span> <span class="fu">names</span>(alldat),</span>
-<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Date"</span>      <span class="sc">%in%</span> <span class="fu">names</span>(metadat),</span>
-<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Time_start"</span><span class="sc">%in%</span> <span class="fu">names</span>(metadat),</span>
-<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Obs_length"</span><span class="sc">%in%</span> <span class="fu">names</span>(metadat),</span>
-<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Plot"</span>      <span class="sc">%in%</span> <span class="fu">names</span>(metadat)</span>
-<span id="cb54-12"><a href="#cb54-12" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb54-13"><a href="#cb54-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb54-14"><a href="#cb54-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">all</span>(metadat<span class="sc">$</span>Obs_length <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb54-15"><a href="#cb54-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">anyDuplicated</span>(metadat<span class="sc">$</span>Plot) <span class="sc">==</span> <span class="dv">0</span>)</span>
-<span id="cb54-16"><a href="#cb54-16" aria-hidden="true" tabindex="-1"></a> <span class="co"># Instruments present in BOTH datasets</span></span>
-<span id="cb54-17"><a href="#cb54-17" aria-hidden="true" tabindex="-1"></a>  instruments <span class="ot">&lt;-</span> <span class="fu">intersect</span>(</span>
-<span id="cb54-18"><a href="#cb54-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">unique</span>(alldat<span class="sc">$</span>SN),</span>
-<span id="cb54-19"><a href="#cb54-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">unique</span>(metadat<span class="sc">$</span>SN)</span>
-<span id="cb54-20"><a href="#cb54-20" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb54-21"><a href="#cb54-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"Instruments to process: "</span>, <span class="fu">paste</span>(instruments, <span class="at">collapse =</span> <span class="st">", "</span>))</span>
-<span id="cb54-22"><a href="#cb54-22" aria-hidden="true" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">lapply</span>(instruments, <span class="cf">function</span>(sn) {</span>
-<span id="cb54-23"><a href="#cb54-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Processing SN: "</span>, sn)</span>
-<span id="cb54-24"><a href="#cb54-24" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> alldat <span class="sc">%&gt;%</span></span>
-<span id="cb54-25"><a href="#cb54-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(SN <span class="sc">==</span> sn)</span>
-<span id="cb54-26"><a href="#cb54-26" aria-hidden="true" tabindex="-1"></a>    meta_i <span class="ot">&lt;-</span> metadat <span class="sc">%&gt;%</span></span>
-<span id="cb54-27"><a href="#cb54-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(SN <span class="sc">==</span> sn) <span class="sc">%&gt;%</span></span>
-<span id="cb54-28"><a href="#cb54-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">arrange</span>(Date, Time_start) <span class="sc">%&gt;%</span></span>
-<span id="cb54-29"><a href="#cb54-29" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">metadat_row =</span> <span class="fu">row_number</span>())</span>
-<span id="cb54-30"><a href="#cb54-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stopifnot</span>(<span class="fu">nrow</span>(meta_i) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb54-31"><a href="#cb54-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Actual matching </span></span>
-<span id="cb54-32"><a href="#cb54-32" aria-hidden="true" tabindex="-1"></a>    dat_i<span class="sc">$</span>metadat_row <span class="ot">&lt;-</span> <span class="fu">ffi_metadata_match</span>(</span>
-<span id="cb54-33"><a href="#cb54-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">data_timestamps =</span> dat_i<span class="sc">$</span>TIMESTAMP,</span>
-<span id="cb54-34"><a href="#cb54-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">start_dates     =</span> meta_i<span class="sc">$</span>Date,</span>
-<span id="cb54-35"><a href="#cb54-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">start_times     =</span> meta_i<span class="sc">$</span>Time_start,</span>
-<span id="cb54-36"><a href="#cb54-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">obs_lengths     =</span> meta_i<span class="sc">$</span>Obs_length  )</span>
-<span id="cb54-37"><a href="#cb54-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Attach metadata (vectorized, fast)</span></span>
-<span id="cb54-38"><a href="#cb54-38" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> dat_i <span class="sc">%&gt;%</span></span>
-<span id="cb54-39"><a href="#cb54-39" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(</span>
-<span id="cb54-40"><a href="#cb54-40" aria-hidden="true" tabindex="-1"></a>        <span class="at">Plot      =</span> meta_i<span class="sc">$</span>Plot[metadat_row],</span>
-<span id="cb54-41"><a href="#cb54-41" aria-hidden="true" tabindex="-1"></a>        <span class="at">Volume    =</span> meta_i<span class="sc">$</span>Volume[metadat_row],</span>
-<span id="cb54-42"><a href="#cb54-42" aria-hidden="true" tabindex="-1"></a>        <span class="at">Temp      =</span> meta_i<span class="sc">$</span>Temp[metadat_row],</span>
-<span id="cb54-43"><a href="#cb54-43" aria-hidden="true" tabindex="-1"></a>        <span class="at">Area      =</span> meta_i<span class="sc">$</span>Area[metadat_row],</span>
-<span id="cb54-44"><a href="#cb54-44" aria-hidden="true" tabindex="-1"></a>        <span class="at">Dead_band =</span> meta_i<span class="sc">$</span>Dead_band[metadat_row]      )</span>
-<span id="cb54-45"><a href="#cb54-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Drop unmatched rows</span></span>
-<span id="cb54-46"><a href="#cb54-46" aria-hidden="true" tabindex="-1"></a>    n_before <span class="ot">&lt;-</span> <span class="fu">nrow</span>(dat_i)</span>
-<span id="cb54-47"><a href="#cb54-47" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> dat_i <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
-<span id="cb54-48"><a href="#cb54-48" aria-hidden="true" tabindex="-1"></a>    n_after <span class="ot">&lt;-</span> <span class="fu">nrow</span>(dat_i)</span>
-<span id="cb54-49"><a href="#cb54-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"  Matched rows: "</span>, n_after, <span class="st">" / "</span>, n_before)</span>
-<span id="cb54-50"><a href="#cb54-50" aria-hidden="true" tabindex="-1"></a>    dat_i })</span>
-<span id="cb54-51"><a href="#cb54-51" aria-hidden="true" tabindex="-1"></a>  alldat_matched <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(results, <span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb54-52"><a href="#cb54-52" aria-hidden="true" tabindex="-1"></a>  <span class="co">#Final sanity checks </span></span>
-<span id="cb54-53"><a href="#cb54-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(</span>
-<span id="cb54-54"><a href="#cb54-54" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span><span class="fu">anyNA</span>(alldat_matched<span class="sc">$</span>Plot),</span>
-<span id="cb54-55"><a href="#cb54-55" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>(alldat_matched) <span class="sc">&gt;</span> <span class="dv">0</span></span>
-<span id="cb54-56"><a href="#cb54-56" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb54-57"><a href="#cb54-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"Matching finished successfully"</span>)</span>
-<span id="cb54-58"><a href="#cb54-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(alldat_matched)}</span>
-<span id="cb54-59"><a href="#cb54-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb54-60"><a href="#cb54-60" aria-hidden="true" tabindex="-1"></a><span class="co">#running the funciton</span></span>
-<span id="cb54-61"><a href="#cb54-61" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Running final metadata matching..."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co">#function to match data per equipment (considering different serial numbers) uhul!</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>match_flux_metadata <span class="ot">&lt;-</span> <span class="cf">function</span>(alldat, metadat) {</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"Starting metadata ↔ Licor matching"</span>)</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#Sanity checks (fail early)</span></span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(</span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"TIMESTAMP"</span> <span class="sc">%in%</span> <span class="fu">names</span>(alldat),</span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"SN"</span>        <span class="sc">%in%</span> <span class="fu">names</span>(alldat),</span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Date"</span>      <span class="sc">%in%</span> <span class="fu">names</span>(metadat),</span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Time_start"</span><span class="sc">%in%</span> <span class="fu">names</span>(metadat),</span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Obs_length"</span><span class="sc">%in%</span> <span class="fu">names</span>(metadat),</span>
+<span id="cb56-11"><a href="#cb56-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Plot"</span>      <span class="sc">%in%</span> <span class="fu">names</span>(metadat)</span>
+<span id="cb56-12"><a href="#cb56-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb56-13"><a href="#cb56-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-14"><a href="#cb56-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">all</span>(metadat<span class="sc">$</span>Obs_length <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb56-15"><a href="#cb56-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">anyDuplicated</span>(metadat<span class="sc">$</span>Plot) <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb56-16"><a href="#cb56-16" aria-hidden="true" tabindex="-1"></a> <span class="co"># Instruments present in BOTH datasets</span></span>
+<span id="cb56-17"><a href="#cb56-17" aria-hidden="true" tabindex="-1"></a>  instruments <span class="ot">&lt;-</span> <span class="fu">intersect</span>(</span>
+<span id="cb56-18"><a href="#cb56-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">unique</span>(alldat<span class="sc">$</span>SN),</span>
+<span id="cb56-19"><a href="#cb56-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">unique</span>(metadat<span class="sc">$</span>SN)</span>
+<span id="cb56-20"><a href="#cb56-20" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb56-21"><a href="#cb56-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"Instruments to process: "</span>, <span class="fu">paste</span>(instruments, <span class="at">collapse =</span> <span class="st">", "</span>))</span>
+<span id="cb56-22"><a href="#cb56-22" aria-hidden="true" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">lapply</span>(instruments, <span class="cf">function</span>(sn) {</span>
+<span id="cb56-23"><a href="#cb56-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Processing SN: "</span>, sn)</span>
+<span id="cb56-24"><a href="#cb56-24" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> alldat <span class="sc">%&gt;%</span></span>
+<span id="cb56-25"><a href="#cb56-25" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(SN <span class="sc">==</span> sn)</span>
+<span id="cb56-26"><a href="#cb56-26" aria-hidden="true" tabindex="-1"></a>    meta_i <span class="ot">&lt;-</span> metadat <span class="sc">%&gt;%</span></span>
+<span id="cb56-27"><a href="#cb56-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(SN <span class="sc">==</span> sn) <span class="sc">%&gt;%</span></span>
+<span id="cb56-28"><a href="#cb56-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">arrange</span>(Date, Time_start) <span class="sc">%&gt;%</span></span>
+<span id="cb56-29"><a href="#cb56-29" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">metadat_row =</span> <span class="fu">row_number</span>())</span>
+<span id="cb56-30"><a href="#cb56-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stopifnot</span>(<span class="fu">nrow</span>(meta_i) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb56-31"><a href="#cb56-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Actual matching </span></span>
+<span id="cb56-32"><a href="#cb56-32" aria-hidden="true" tabindex="-1"></a>    dat_i<span class="sc">$</span>metadat_row <span class="ot">&lt;-</span> <span class="fu">ffi_metadata_match</span>(</span>
+<span id="cb56-33"><a href="#cb56-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">data_timestamps =</span> dat_i<span class="sc">$</span>TIMESTAMP,</span>
+<span id="cb56-34"><a href="#cb56-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">start_dates     =</span> meta_i<span class="sc">$</span>Date,</span>
+<span id="cb56-35"><a href="#cb56-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">start_times     =</span> meta_i<span class="sc">$</span>Time_start,</span>
+<span id="cb56-36"><a href="#cb56-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">obs_lengths     =</span> meta_i<span class="sc">$</span>Obs_length  )</span>
+<span id="cb56-37"><a href="#cb56-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Attach metadata (vectorized, fast)</span></span>
+<span id="cb56-38"><a href="#cb56-38" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> dat_i <span class="sc">%&gt;%</span></span>
+<span id="cb56-39"><a href="#cb56-39" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(</span>
+<span id="cb56-40"><a href="#cb56-40" aria-hidden="true" tabindex="-1"></a>        <span class="at">Plot      =</span> meta_i<span class="sc">$</span>Plot[metadat_row],</span>
+<span id="cb56-41"><a href="#cb56-41" aria-hidden="true" tabindex="-1"></a>        <span class="at">Volume    =</span> meta_i<span class="sc">$</span>Volume[metadat_row],</span>
+<span id="cb56-42"><a href="#cb56-42" aria-hidden="true" tabindex="-1"></a>        <span class="at">Temp      =</span> meta_i<span class="sc">$</span>Temp[metadat_row],</span>
+<span id="cb56-43"><a href="#cb56-43" aria-hidden="true" tabindex="-1"></a>        <span class="at">Area      =</span> meta_i<span class="sc">$</span>Area[metadat_row],</span>
+<span id="cb56-44"><a href="#cb56-44" aria-hidden="true" tabindex="-1"></a>        <span class="at">Dead_band =</span> meta_i<span class="sc">$</span>Dead_band[metadat_row]      )</span>
+<span id="cb56-45"><a href="#cb56-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Drop unmatched rows</span></span>
+<span id="cb56-46"><a href="#cb56-46" aria-hidden="true" tabindex="-1"></a>    n_before <span class="ot">&lt;-</span> <span class="fu">nrow</span>(dat_i)</span>
+<span id="cb56-47"><a href="#cb56-47" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> dat_i <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
+<span id="cb56-48"><a href="#cb56-48" aria-hidden="true" tabindex="-1"></a>    n_after <span class="ot">&lt;-</span> <span class="fu">nrow</span>(dat_i)</span>
+<span id="cb56-49"><a href="#cb56-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"  Matched rows: "</span>, n_after, <span class="st">" / "</span>, n_before)</span>
+<span id="cb56-50"><a href="#cb56-50" aria-hidden="true" tabindex="-1"></a>    dat_i })</span>
+<span id="cb56-51"><a href="#cb56-51" aria-hidden="true" tabindex="-1"></a>  alldat_matched <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(results, <span class="at">fill =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb56-52"><a href="#cb56-52" aria-hidden="true" tabindex="-1"></a>  <span class="co">#Final sanity checks </span></span>
+<span id="cb56-53"><a href="#cb56-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(</span>
+<span id="cb56-54"><a href="#cb56-54" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span><span class="fu">anyNA</span>(alldat_matched<span class="sc">$</span>Plot),</span>
+<span id="cb56-55"><a href="#cb56-55" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>(alldat_matched) <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb56-56"><a href="#cb56-56" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb56-57"><a href="#cb56-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"Matching finished successfully"</span>)</span>
+<span id="cb56-58"><a href="#cb56-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(alldat_matched)}</span>
+<span id="cb56-59"><a href="#cb56-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-60"><a href="#cb56-60" aria-hidden="true" tabindex="-1"></a><span class="co">#running the funciton</span></span>
+<span id="cb56-61"><a href="#cb56-61" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Running final metadata matching..."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Running final metadata matching...</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>alldat_matched <span class="ot">&lt;-</span> <span class="fu">match_flux_metadata</span>(alldat, metadat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>alldat_matched <span class="ot">&lt;-</span> <span class="fu">match_flux_metadata</span>(alldat, metadat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Starting metadata ↔ Licor matching</code></pre>
 </div>
@@ -555,11 +567,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-stderr">
 <pre><code>Matching finished successfully</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Matched dataset rows: "</span>, <span class="fu">nrow</span>(alldat_matched))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Matched dataset rows: "</span>, <span class="fu">nrow</span>(alldat_matched))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Matched dataset rows: 132205</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(alldat_matched)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(alldat_matched)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    DATAH    SECONDS NANOSECONDS   NDX  DIAG REMARK      H2O      CO2      CH4
    &lt;char&gt;      &lt;int&gt;       &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;lgcl&gt;    &lt;num&gt;    &lt;num&gt;    &lt;num&gt;
@@ -602,99 +614,99 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 5: 1/5/2023_OWC_TR_128_9 0.000128704    25 0.00202683        NA
 6: 1/5/2023_OWC_TR_128_9 0.000128704    25 0.00202683        NA</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="co">#saving matched data and metadata as raw data is too big (today, Licor files leave in the COMPASS drive)</span></span>
-<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(alldat_matched, <span class="at">file =</span> <span class="st">"alldat_matched_2023.rds"</span>)</span>
-<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a><span class="co">#can remove any row that have NA's in the CH4 column </span></span>
-<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a><span class="co">#alldat &lt;- alldat %&gt;%</span></span>
-<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a> <span class="co"># filter(!is.na(CH4))</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co">#saving matched data and metadata as raw data is too big (today, Licor files leave in the COMPASS drive)</span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(alldat_matched, <span class="at">file =</span> <span class="st">"alldat_matched_2023.rds"</span>)</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a><span class="co">#can remove any row that have NA's in the CH4 column </span></span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a><span class="co">#alldat &lt;- alldat %&gt;%</span></span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a> <span class="co"># filter(!is.na(CH4))</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="temperature-from-weather-station" class="level2">
 <h2 class="anchored" data-anchor-id="temperature-from-weather-station">Temperature from weather station</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># I need to go back here to get temp from the weather station</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="co"># I need to go back here to get temp from the weather station</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="fixing-some-deadbands" class="level2">
 <h2 class="anchored" data-anchor-id="fixing-some-deadbands">fixing some Deadbands</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Table of plots with custom deadband adjustments</span></span>
-<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>deadband_overrides <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
-<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Plot =</span> <span class="fu">c</span>(</span>
-<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR315-115"</span>,</span>
-<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/27/2023PTR_UP8-125"</span>,</span>
-<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR315-115"</span>,</span>
-<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"3/28/2023OWC_TR127-170"</span>,</span>
-<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"5/10/2023OWC_UP103-73"</span>,</span>
-<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR314-114"</span>,</span>
-<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"8/3/2023CRC_TR314-133"</span>,</span>
-<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR316-116"</span>,</span>
-<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"6/29/2023CRC_TR311-104"</span></span>
-<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb76-14"><a href="#cb76-14" aria-hidden="true" tabindex="-1"></a>  ),</span>
-<span id="cb76-15"><a href="#cb76-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">DeadBand_override =</span> <span class="fu">c</span>(</span>
-<span id="cb76-16"><a href="#cb76-16" aria-hidden="true" tabindex="-1"></a>    <span class="dv">8</span>,</span>
-<span id="cb76-17"><a href="#cb76-17" aria-hidden="true" tabindex="-1"></a>    <span class="dv">9</span>,</span>
-<span id="cb76-18"><a href="#cb76-18" aria-hidden="true" tabindex="-1"></a>    <span class="dv">22</span>,</span>
-<span id="cb76-19"><a href="#cb76-19" aria-hidden="true" tabindex="-1"></a>    <span class="dv">22</span>,</span>
-<span id="cb76-20"><a href="#cb76-20" aria-hidden="true" tabindex="-1"></a>    <span class="dv">16</span>,</span>
-<span id="cb76-21"><a href="#cb76-21" aria-hidden="true" tabindex="-1"></a>    <span class="dv">8</span>,</span>
-<span id="cb76-22"><a href="#cb76-22" aria-hidden="true" tabindex="-1"></a>    <span class="dv">16</span>,</span>
-<span id="cb76-23"><a href="#cb76-23" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span>,</span>
-<span id="cb76-24"><a href="#cb76-24" aria-hidden="true" tabindex="-1"></a>    <span class="dv">34</span></span>
-<span id="cb76-25"><a href="#cb76-25" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb76-26"><a href="#cb76-26" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb76-27"><a href="#cb76-27" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb76-28"><a href="#cb76-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb76-29"><a href="#cb76-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Default deadband</span></span>
-<span id="cb76-30"><a href="#cb76-30" aria-hidden="true" tabindex="-1"></a>alldat_matched <span class="ot">&lt;-</span> alldat_matched <span class="sc">%&gt;%</span></span>
-<span id="cb76-31"><a href="#cb76-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb76-32"><a href="#cb76-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">DeadBand_used =</span> <span class="fu">as.numeric</span>(Dead_band),</span>
-<span id="cb76-33"><a href="#cb76-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">DeadBand_used =</span> <span class="fu">if_else</span>(</span>
-<span id="cb76-34"><a href="#cb76-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(DeadBand_used),</span>
-<span id="cb76-35"><a href="#cb76-35" aria-hidden="true" tabindex="-1"></a>      <span class="dv">0</span>,     </span>
-<span id="cb76-36"><a href="#cb76-36" aria-hidden="true" tabindex="-1"></a>      DeadBand_used    )</span>
-<span id="cb76-37"><a href="#cb76-37" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb76-38"><a href="#cb76-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb76-39"><a href="#cb76-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply per-plot overrides</span></span>
-<span id="cb76-40"><a href="#cb76-40" aria-hidden="true" tabindex="-1"></a>alldat_matched <span class="ot">&lt;-</span> alldat_matched <span class="sc">%&gt;%</span></span>
-<span id="cb76-41"><a href="#cb76-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(deadband_overrides, <span class="at">by =</span> <span class="st">"Plot"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb76-42"><a href="#cb76-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb76-43"><a href="#cb76-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">DeadBand_used =</span> <span class="fu">if_else</span>(</span>
-<span id="cb76-44"><a href="#cb76-44" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!</span><span class="fu">is.na</span>(DeadBand_override),</span>
-<span id="cb76-45"><a href="#cb76-45" aria-hidden="true" tabindex="-1"></a>      DeadBand_override,</span>
-<span id="cb76-46"><a href="#cb76-46" aria-hidden="true" tabindex="-1"></a>      DeadBand_used</span>
-<span id="cb76-47"><a href="#cb76-47" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb76-48"><a href="#cb76-48" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb76-49"><a href="#cb76-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>DeadBand_override)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Table of plots with custom deadband adjustments</span></span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>deadband_overrides <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Plot =</span> <span class="fu">c</span>(</span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR315-115"</span>,</span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/27/2023PTR_UP8-125"</span>,</span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR315-115"</span>,</span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"3/28/2023OWC_TR127-170"</span>,</span>
+<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"5/10/2023OWC_UP103-73"</span>,</span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR314-114"</span>,</span>
+<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"8/3/2023CRC_TR314-133"</span>,</span>
+<span id="cb78-11"><a href="#cb78-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"7/13/2023CRC_TR316-116"</span>,</span>
+<span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"6/29/2023CRC_TR311-104"</span></span>
+<span id="cb78-13"><a href="#cb78-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-14"><a href="#cb78-14" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb78-15"><a href="#cb78-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">DeadBand_override =</span> <span class="fu">c</span>(</span>
+<span id="cb78-16"><a href="#cb78-16" aria-hidden="true" tabindex="-1"></a>    <span class="dv">8</span>,</span>
+<span id="cb78-17"><a href="#cb78-17" aria-hidden="true" tabindex="-1"></a>    <span class="dv">9</span>,</span>
+<span id="cb78-18"><a href="#cb78-18" aria-hidden="true" tabindex="-1"></a>    <span class="dv">22</span>,</span>
+<span id="cb78-19"><a href="#cb78-19" aria-hidden="true" tabindex="-1"></a>    <span class="dv">22</span>,</span>
+<span id="cb78-20"><a href="#cb78-20" aria-hidden="true" tabindex="-1"></a>    <span class="dv">16</span>,</span>
+<span id="cb78-21"><a href="#cb78-21" aria-hidden="true" tabindex="-1"></a>    <span class="dv">8</span>,</span>
+<span id="cb78-22"><a href="#cb78-22" aria-hidden="true" tabindex="-1"></a>    <span class="dv">16</span>,</span>
+<span id="cb78-23"><a href="#cb78-23" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span>,</span>
+<span id="cb78-24"><a href="#cb78-24" aria-hidden="true" tabindex="-1"></a>    <span class="dv">34</span></span>
+<span id="cb78-25"><a href="#cb78-25" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb78-26"><a href="#cb78-26" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb78-27"><a href="#cb78-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb78-28"><a href="#cb78-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-29"><a href="#cb78-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Default deadband</span></span>
+<span id="cb78-30"><a href="#cb78-30" aria-hidden="true" tabindex="-1"></a>alldat_matched <span class="ot">&lt;-</span> alldat_matched <span class="sc">%&gt;%</span></span>
+<span id="cb78-31"><a href="#cb78-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb78-32"><a href="#cb78-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">DeadBand_used =</span> <span class="fu">as.numeric</span>(Dead_band),</span>
+<span id="cb78-33"><a href="#cb78-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">DeadBand_used =</span> <span class="fu">if_else</span>(</span>
+<span id="cb78-34"><a href="#cb78-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(DeadBand_used),</span>
+<span id="cb78-35"><a href="#cb78-35" aria-hidden="true" tabindex="-1"></a>      <span class="dv">0</span>,     </span>
+<span id="cb78-36"><a href="#cb78-36" aria-hidden="true" tabindex="-1"></a>      DeadBand_used    )</span>
+<span id="cb78-37"><a href="#cb78-37" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb78-38"><a href="#cb78-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-39"><a href="#cb78-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply per-plot overrides</span></span>
+<span id="cb78-40"><a href="#cb78-40" aria-hidden="true" tabindex="-1"></a>alldat_matched <span class="ot">&lt;-</span> alldat_matched <span class="sc">%&gt;%</span></span>
+<span id="cb78-41"><a href="#cb78-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(deadband_overrides, <span class="at">by =</span> <span class="st">"Plot"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb78-42"><a href="#cb78-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb78-43"><a href="#cb78-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">DeadBand_used =</span> <span class="fu">if_else</span>(</span>
+<span id="cb78-44"><a href="#cb78-44" aria-hidden="true" tabindex="-1"></a>      <span class="sc">!</span><span class="fu">is.na</span>(DeadBand_override),</span>
+<span id="cb78-45"><a href="#cb78-45" aria-hidden="true" tabindex="-1"></a>      DeadBand_override,</span>
+<span id="cb78-46"><a href="#cb78-46" aria-hidden="true" tabindex="-1"></a>      DeadBand_used</span>
+<span id="cb78-47"><a href="#cb78-47" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb78-48"><a href="#cb78-48" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb78-49"><a href="#cb78-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>DeadBand_override)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="calculate-fluxes" class="level2">
 <h2 class="anchored" data-anchor-id="calculate-fluxes">Calculate fluxes</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="co"># TO Do - NEED TO PULL TEMP from the weather station</span></span>
-<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="co">#change the units</span></span>
-<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a>alldat_matched<span class="sc">$</span>CH4_nmol <span class="ot">&lt;-</span> <span class="fu">ffi_ppb_to_nmol</span>(alldat_matched<span class="sc">$</span>CH4, </span>
-<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>                                <span class="at">volume =</span> alldat_matched<span class="sc">$</span>Volume, <span class="co"># m3</span></span>
-<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>                                <span class="at">temp =</span> alldat_matched<span class="sc">$</span>Temp)    <span class="co"># degrees C</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># TO Do - NEED TO PULL TEMP from the weather station</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a><span class="co">#change the units</span></span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>alldat_matched<span class="sc">$</span>CH4_nmol <span class="ot">&lt;-</span> <span class="fu">ffi_ppb_to_nmol</span>(alldat_matched<span class="sc">$</span>CH4, </span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>                                <span class="at">volume =</span> alldat_matched<span class="sc">$</span>Volume, <span class="co"># m3</span></span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>                                <span class="at">temp =</span> alldat_matched<span class="sc">$</span>Temp)    <span class="co"># degrees C</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Assuming atm = 101325 Pa</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Using R = 8.31446261815324 m3 Pa K-1 mol-1</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Assuming atm = 101325 Pa</span></span>
-<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Using R = 8.31446261815324 m3 Pa K-1 mol-1</span></span>
-<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>alldat_matched<span class="sc">$</span>CH4_nmol_m2 <span class="ot">&lt;-</span> alldat_matched<span class="sc">$</span>CH4_nmol <span class="sc">/</span> <span class="fl">0.16</span></span>
-<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb80-6"><a href="#cb80-6" aria-hidden="true" tabindex="-1"></a>fluxes <span class="ot">&lt;-</span> <span class="fu">ffi_compute_fluxes</span>(alldat_matched ,</span>
-<span id="cb80-7"><a href="#cb80-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">group_column =</span> <span class="st">"Plot"</span>, </span>
-<span id="cb80-8"><a href="#cb80-8" aria-hidden="true" tabindex="-1"></a>                             <span class="at">time_column =</span> <span class="st">"TIMESTAMP"</span>, </span>
-<span id="cb80-9"><a href="#cb80-9" aria-hidden="true" tabindex="-1"></a>                             <span class="at">gas_column =</span> <span class="st">"CH4_nmol_m2"</span>, </span>
-<span id="cb80-10"><a href="#cb80-10" aria-hidden="true" tabindex="-1"></a>                             <span class="at">dead_band =</span> <span class="st">"DeadBand_used"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Assuming atm = 101325 Pa</span></span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Using R = 8.31446261815324 m3 Pa K-1 mol-1</span></span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a>alldat_matched<span class="sc">$</span>CH4_nmol_m2 <span class="ot">&lt;-</span> alldat_matched<span class="sc">$</span>CH4_nmol <span class="sc">/</span> <span class="fl">0.16</span></span>
+<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a>fluxes <span class="ot">&lt;-</span> <span class="fu">ffi_compute_fluxes</span>(alldat_matched ,</span>
+<span id="cb82-7"><a href="#cb82-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">group_column =</span> <span class="st">"Plot"</span>, </span>
+<span id="cb82-8"><a href="#cb82-8" aria-hidden="true" tabindex="-1"></a>                             <span class="at">time_column =</span> <span class="st">"TIMESTAMP"</span>, </span>
+<span id="cb82-9"><a href="#cb82-9" aria-hidden="true" tabindex="-1"></a>                             <span class="at">gas_column =</span> <span class="st">"CH4_nmol_m2"</span>, </span>
+<span id="cb82-10"><a href="#cb82-10" aria-hidden="true" tabindex="-1"></a>                             <span class="at">dead_band =</span> <span class="st">"DeadBand_used"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </div>
@@ -864,59 +876,59 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data
 NOTE: HM81_flux.estimate is not NA, implying nonlinear data
 NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(fluxes)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(fluxes)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                     Plot           TIMESTAMP  HM81_AIC HM81_flux.estimate
 1   1/12/2023_PTR_TR_1_26 2023-01-12 11:25:29 -4397.981       0.0001837226
 2   1/12/2023_PTR_TR_2_27 2023-01-12 11:41:49        NA                 NA
 3   1/12/2023_PTR_TR_3_28 2023-01-12 11:55:29 -4116.165       0.0003830842
-4 1/12/2023_PTR_TR_301_18 2023-01-12 12:33:47 -3527.766       0.0002180960
-5 1/12/2023_PTR_TR_302_21 2023-01-12 13:00:44 -3963.980       0.0001687978
-6 1/12/2023_PTR_TR_303_20 2023-01-12 13:20:49 -3777.691      -0.0001720871
+4   1/12/2023_PTR_TR_4_29 2023-01-12 12:07:29 -4274.821       0.0001064667
+5 1/12/2023_PTR_TR_4_B_30 2023-01-12 12:18:29 -3724.630       0.0001840159
+6   1/12/2023_PTR_TR_5_31 2023-01-12 12:26:29 -4631.828       0.0002972799
    HM81_p.value HM81_r.squared   HM81_RMSE   lin_AIC lin_flux.estimate
-1 1.385494e-133      0.6366686 0.006174957 -4880.409      0.0001080679
-2            NA             NA          NA -6175.886      0.0002016993
-3 8.679474e-139      0.6509263 0.007809562 -4979.274      0.0001459285
-4 3.644026e-104      0.5895275 0.008644867 -4363.130      0.0001684162
-5 1.553524e-116      0.6245541 0.006139633 -4414.182      0.0001173891
-6  1.169928e-99      0.5800584 0.006376242 -4359.842     -0.0001215453
+1 1.385494e-133      0.6366686 0.006174957 -4880.409      1.080679e-04
+2            NA             NA          NA -6175.886      2.016993e-04
+3 8.679474e-139      0.6509263 0.007809562 -4979.274      1.459285e-04
+4 9.674015e-106      0.5498878 0.006842380 -5007.421      1.094876e-04
+5 4.363709e-127      0.6180428 0.010822506 -5084.261      1.978288e-04
+6 5.757338e-146      0.6696836 0.005081616 -4735.724      8.661898e-05
   lin_flux.std.error lin_int.estimate lin_int.std.error   lin_p.value
 1       1.947303e-06         74.86879      0.0003364395 4.716390e-238
 2       1.372296e-06         74.79097      0.0003004780  0.000000e+00
 3       1.793301e-06         75.00227      0.0003098322  0.000000e+00
-4       2.232079e-06         76.00091      0.0003405366 5.676218e-285
-5       2.234281e-06         76.82817      0.0003473224 5.369111e-214
-6       2.128545e-06         76.29873      0.0003185963 1.138180e-225
+4       1.751726e-06         75.31598      0.0003026493 2.163633e-264
+5       1.643073e-06         75.45519      0.0002838771  0.000000e+00
+6       2.196833e-06         75.58108      0.0003795513 1.813546e-168
   lin_r.squared    lin_RMSE  poly_AIC poly_r.squared   poly_RMSE   rob_AIC
 1     0.8374040 0.004130831 -4920.108      0.8488251 0.003989788 -4880.149
 2     0.9661016 0.004149981 -6343.744      0.9729621 0.003711219 -6175.468
 3     0.9171719 0.003804144 -4987.701      0.9188697 0.003771265 -4979.219
-4     0.9151275 0.003930970 -4407.623      0.9225483 0.003762322 -4362.791
-5     0.8368931 0.004046736 -4442.962      0.8464998 0.003933073 -4414.173
-6     0.8629158 0.003643041 -4359.279      0.8638189 0.003638050 -4359.602
+4     0.8672463 0.003715952 -5009.907      0.8686735 0.003702120 -5007.286
+5     0.9603831 0.003485466 -5090.211      0.9610346 0.003462480 -5084.123
+6     0.7222026 0.004660161 -5069.051      0.8416703 0.003524077 -4735.195
   rob_converged rob_flux.estimate rob_flux.std.error    rob_RMSE
-1          TRUE      0.0001080883       1.991745e-06 0.004221110
-2          TRUE      0.0002009986       1.444849e-06 0.004092531
-3          TRUE      0.0001457152       1.825729e-06 0.004121010
-4          TRUE      0.0001680826       2.242184e-06 0.004026754
-5          TRUE      0.0001173309       2.376482e-06 0.004048670
-6          TRUE     -0.0001217637       2.182279e-06 0.003783987
+1          TRUE      1.080883e-04       1.991745e-06 0.004221110
+2          TRUE      2.009986e-04       1.444849e-06 0.004092531
+3          TRUE      1.457152e-04       1.825729e-06 0.004121010
+4          TRUE      1.097048e-04       1.750889e-06 0.003557851
+5          TRUE      1.977546e-04       1.726485e-06 0.003609271
+6          TRUE      8.574427e-05       2.344640e-06 0.004375269
         TIMESTAMP_min       TIMESTAMP_max
 1 2023-01-12 11:23:00 2023-01-12 11:27:59
 2 2023-01-12 11:38:40 2023-01-12 11:44:59
 3 2023-01-12 11:53:00 2023-01-12 11:57:59
-4 2023-01-12 12:31:35 2023-01-12 12:35:59
-5 2023-01-12 12:58:30 2023-01-12 13:02:59
-6 2023-01-12 13:18:40 2023-01-12 13:22:59</code></pre>
+4 2023-01-12 12:05:00 2023-01-12 12:09:59
+5 2023-01-12 12:16:00 2023-01-12 12:20:59
+6 2023-01-12 12:24:00 2023-01-12 12:28:59</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="co">#take a look at the fluxes we calculated with R2 </span></span>
-<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(Plot, lin_flux.estimate, <span class="at">color =</span> lin_r.squared)) <span class="sc">+</span></span>
-<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
-<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_linerange</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lin_flux.estimate<span class="sc">-</span> lin_flux.std.error,</span>
-<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">ymax =</span> lin_flux.estimate<span class="sc">+</span> lin_flux.std.error)) <span class="sc">+</span></span>
-<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradientn</span>(<span class="at">colours =</span> <span class="fu">c</span>(<span class="st">"darkred"</span>,  <span class="st">"red"</span>, <span class="st">"white"</span>,<span class="st">"lightblue"</span>, <span class="st">"darkblue"</span>),</span>
-<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a>                        <span class="at">values =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>, <span class="fl">0.7</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
-<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"CH4 flux (nmol/m2/s)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="co">#take a look at the fluxes we calculated with R2 </span></span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(Plot, lin_flux.estimate, <span class="at">color =</span> lin_r.squared)) <span class="sc">+</span></span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
+<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_linerange</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lin_flux.estimate<span class="sc">-</span> lin_flux.std.error,</span>
+<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">ymax =</span> lin_flux.estimate<span class="sc">+</span> lin_flux.std.error)) <span class="sc">+</span></span>
+<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradientn</span>(<span class="at">colours =</span> <span class="fu">c</span>(<span class="st">"darkred"</span>,  <span class="st">"red"</span>, <span class="st">"white"</span>,<span class="st">"lightblue"</span>, <span class="st">"darkblue"</span>),</span>
+<span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a>                        <span class="at">values =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.6</span>, <span class="fl">0.7</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb87-8"><a href="#cb87-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"CH4 flux (nmol/m2/s)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -924,62 +936,62 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="co">#sort fluxes by R2 </span></span>
-<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>fluxes_good <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_r.squared <span class="sc">&gt;=</span> .<span class="dv">90</span>, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
-<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>fluxes_lowr2 <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_r.squared <span class="sc">&lt;</span> .<span class="dv">90</span> <span class="sc">&amp;</span> lin_flux.estimate <span class="sc">&lt;</span> <span class="dv">1</span>, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
-<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a>fluxes_weird <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_r.squared <span class="sc">&lt;</span> .<span class="dv">90</span>, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
-<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a><span class="co">#find fluxes that represent the first and fourth quartile of the data </span></span>
-<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a>low <span class="ot">&lt;-</span> <span class="fu">quantile</span>(fluxes<span class="sc">$</span>lin_flux.estimate, <span class="fl">0.05</span>) </span>
-<span id="cb86-8"><a href="#cb86-8" aria-hidden="true" tabindex="-1"></a>high <span class="ot">&lt;-</span> <span class="fu">quantile</span>(fluxes<span class="sc">$</span>lin_flux.estimate, <span class="fl">0.95</span>) </span>
-<span id="cb86-9"><a href="#cb86-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-10"><a href="#cb86-10" aria-hidden="true" tabindex="-1"></a>fluxes_low <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_flux.estimate <span class="sc">&lt;=</span> low, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
-<span id="cb86-11"><a href="#cb86-11" aria-hidden="true" tabindex="-1"></a>fluxes_high <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_flux.estimate <span class="sc">&gt;=</span> high, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
-<span id="cb86-12"><a href="#cb86-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-13"><a href="#cb86-13" aria-hidden="true" tabindex="-1"></a>tails <span class="ot">&lt;-</span> <span class="fu">rbind</span>(fluxes_low, fluxes_high)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="co">#sort fluxes by R2 </span></span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>fluxes_good <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_r.squared <span class="sc">&gt;=</span> .<span class="dv">90</span>, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
+<span id="cb88-3"><a href="#cb88-3" aria-hidden="true" tabindex="-1"></a>fluxes_lowr2 <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_r.squared <span class="sc">&lt;</span> .<span class="dv">90</span> <span class="sc">&amp;</span> lin_flux.estimate <span class="sc">&lt;</span> <span class="dv">1</span>, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
+<span id="cb88-4"><a href="#cb88-4" aria-hidden="true" tabindex="-1"></a>fluxes_weird <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_r.squared <span class="sc">&lt;</span> .<span class="dv">90</span>, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
+<span id="cb88-5"><a href="#cb88-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-6"><a href="#cb88-6" aria-hidden="true" tabindex="-1"></a><span class="co">#find fluxes that represent the first and fourth quartile of the data </span></span>
+<span id="cb88-7"><a href="#cb88-7" aria-hidden="true" tabindex="-1"></a>low <span class="ot">&lt;-</span> <span class="fu">quantile</span>(fluxes<span class="sc">$</span>lin_flux.estimate, <span class="fl">0.05</span>) </span>
+<span id="cb88-8"><a href="#cb88-8" aria-hidden="true" tabindex="-1"></a>high <span class="ot">&lt;-</span> <span class="fu">quantile</span>(fluxes<span class="sc">$</span>lin_flux.estimate, <span class="fl">0.95</span>) </span>
+<span id="cb88-9"><a href="#cb88-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-10"><a href="#cb88-10" aria-hidden="true" tabindex="-1"></a>fluxes_low <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_flux.estimate <span class="sc">&lt;=</span> low, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
+<span id="cb88-11"><a href="#cb88-11" aria-hidden="true" tabindex="-1"></a>fluxes_high <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, lin_flux.estimate <span class="sc">&gt;=</span> high, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
+<span id="cb88-12"><a href="#cb88-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-13"><a href="#cb88-13" aria-hidden="true" tabindex="-1"></a>tails <span class="ot">&lt;-</span> <span class="fu">rbind</span>(fluxes_low, fluxes_high)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="check-the-fluxes-for-which-i-changed-the-start-time-due-to-lags-or-high-values-recorded-in-notes-of-metadata" class="level2">
 <h2 class="anchored" data-anchor-id="check-the-fluxes-for-which-i-changed-the-start-time-due-to-lags-or-high-values-recorded-in-notes-of-metadata">check the fluxes for which I changed the start time due to lags or high values (recorded in notes of metadata)</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="do">#### If something is in a V shape should we take the second part to make a positive linear curve?</span></span>
-<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Subset data and create relative time (seconds since flux start)</span></span>
-<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a><span class="co"># r_all &lt;- alldat %&gt;%</span></span>
-<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(Plot %in% deadband_overrides$Plot) %&gt;%</span></span>
-<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   group_by(Plot) %&gt;%</span></span>
-<span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(</span></span>
-<span id="cb87-8"><a href="#cb87-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     time_sec = as.numeric(</span></span>
-<span id="cb87-9"><a href="#cb87-9" aria-hidden="true" tabindex="-1"></a><span class="co">#       difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")</span></span>
-<span id="cb87-10"><a href="#cb87-10" aria-hidden="true" tabindex="-1"></a><span class="co">#     )</span></span>
-<span id="cb87-11"><a href="#cb87-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   ) %&gt;%</span></span>
-<span id="cb87-12"><a href="#cb87-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   ungroup()</span></span>
-<span id="cb87-13"><a href="#cb87-13" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb87-14"><a href="#cb87-14" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb87-15"><a href="#cb87-15" aria-hidden="true" tabindex="-1"></a><span class="co"># # Random sample of plots for visualization</span></span>
-<span id="cb87-16"><a href="#cb87-16" aria-hidden="true" tabindex="-1"></a><span class="co"># plots_sample &lt;- sample(unique(r_all$Plot), 6,replace = FALSE)</span></span>
-<span id="cb87-17"><a href="#cb87-17" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb87-18"><a href="#cb87-18" aria-hidden="true" tabindex="-1"></a><span class="co"># r_plot &lt;- r_all %&gt;%</span></span>
-<span id="cb87-19"><a href="#cb87-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(Plot %in% plots_sample)</span></span>
-<span id="cb87-20"><a href="#cb87-20" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb87-21"><a href="#cb87-21" aria-hidden="true" tabindex="-1"></a><span class="co"># # Plot</span></span>
-<span id="cb87-22"><a href="#cb87-22" aria-hidden="true" tabindex="-1"></a><span class="co"># ggplot(</span></span>
-<span id="cb87-23"><a href="#cb87-23" aria-hidden="true" tabindex="-1"></a><span class="co">#   r_plot,</span></span>
-<span id="cb87-24"><a href="#cb87-24" aria-hidden="true" tabindex="-1"></a><span class="co">#   aes(</span></span>
-<span id="cb87-25"><a href="#cb87-25" aria-hidden="true" tabindex="-1"></a><span class="co">#     x = TIMESTAMP,</span></span>
-<span id="cb87-26"><a href="#cb87-26" aria-hidden="true" tabindex="-1"></a><span class="co">#     y = co2,</span></span>
-<span id="cb87-27"><a href="#cb87-27" aria-hidden="true" tabindex="-1"></a><span class="co">#     color = time_sec &gt;= DeadBand_used</span></span>
-<span id="cb87-28"><a href="#cb87-28" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
-<span id="cb87-29"><a href="#cb87-29" aria-hidden="true" tabindex="-1"></a><span class="co"># ) +</span></span>
-<span id="cb87-30"><a href="#cb87-30" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_point(size = 1.8) +</span></span>
-<span id="cb87-31"><a href="#cb87-31" aria-hidden="true" tabindex="-1"></a><span class="co">#   facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +</span></span>
-<span id="cb87-32"><a href="#cb87-32" aria-hidden="true" tabindex="-1"></a><span class="co">#   scale_color_manual(</span></span>
-<span id="cb87-33"><a href="#cb87-33" aria-hidden="true" tabindex="-1"></a><span class="co">#     values = c("grey60", "red"),</span></span>
-<span id="cb87-34"><a href="#cb87-34" aria-hidden="true" tabindex="-1"></a><span class="co">#     labels = c("Discarded (deadband)", "Used after deadband")</span></span>
-<span id="cb87-35"><a href="#cb87-35" aria-hidden="true" tabindex="-1"></a><span class="co">#   ) +</span></span>
-<span id="cb87-36"><a href="#cb87-36" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme_classic() +</span></span>
-<span id="cb87-37"><a href="#cb87-37" aria-hidden="true" tabindex="-1"></a><span class="co">#   ylab(expression(paste(CO[2], " (ppm)"))) +</span></span>
-<span id="cb87-38"><a href="#cb87-38" aria-hidden="true" tabindex="-1"></a><span class="co">#   xlab("Time")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="do">#### If something is in a V shape should we take the second part to make a positive linear curve?</span></span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Subset data and create relative time (seconds since flux start)</span></span>
+<span id="cb89-4"><a href="#cb89-4" aria-hidden="true" tabindex="-1"></a><span class="co"># r_all &lt;- alldat %&gt;%</span></span>
+<span id="cb89-5"><a href="#cb89-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(Plot %in% deadband_overrides$Plot) %&gt;%</span></span>
+<span id="cb89-6"><a href="#cb89-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   group_by(Plot) %&gt;%</span></span>
+<span id="cb89-7"><a href="#cb89-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(</span></span>
+<span id="cb89-8"><a href="#cb89-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     time_sec = as.numeric(</span></span>
+<span id="cb89-9"><a href="#cb89-9" aria-hidden="true" tabindex="-1"></a><span class="co">#       difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")</span></span>
+<span id="cb89-10"><a href="#cb89-10" aria-hidden="true" tabindex="-1"></a><span class="co">#     )</span></span>
+<span id="cb89-11"><a href="#cb89-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   ) %&gt;%</span></span>
+<span id="cb89-12"><a href="#cb89-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   ungroup()</span></span>
+<span id="cb89-13"><a href="#cb89-13" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb89-14"><a href="#cb89-14" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb89-15"><a href="#cb89-15" aria-hidden="true" tabindex="-1"></a><span class="co"># # Random sample of plots for visualization</span></span>
+<span id="cb89-16"><a href="#cb89-16" aria-hidden="true" tabindex="-1"></a><span class="co"># plots_sample &lt;- sample(unique(r_all$Plot), 6,replace = FALSE)</span></span>
+<span id="cb89-17"><a href="#cb89-17" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb89-18"><a href="#cb89-18" aria-hidden="true" tabindex="-1"></a><span class="co"># r_plot &lt;- r_all %&gt;%</span></span>
+<span id="cb89-19"><a href="#cb89-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(Plot %in% plots_sample)</span></span>
+<span id="cb89-20"><a href="#cb89-20" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb89-21"><a href="#cb89-21" aria-hidden="true" tabindex="-1"></a><span class="co"># # Plot</span></span>
+<span id="cb89-22"><a href="#cb89-22" aria-hidden="true" tabindex="-1"></a><span class="co"># ggplot(</span></span>
+<span id="cb89-23"><a href="#cb89-23" aria-hidden="true" tabindex="-1"></a><span class="co">#   r_plot,</span></span>
+<span id="cb89-24"><a href="#cb89-24" aria-hidden="true" tabindex="-1"></a><span class="co">#   aes(</span></span>
+<span id="cb89-25"><a href="#cb89-25" aria-hidden="true" tabindex="-1"></a><span class="co">#     x = TIMESTAMP,</span></span>
+<span id="cb89-26"><a href="#cb89-26" aria-hidden="true" tabindex="-1"></a><span class="co">#     y = ch4,</span></span>
+<span id="cb89-27"><a href="#cb89-27" aria-hidden="true" tabindex="-1"></a><span class="co">#     color = time_sec &gt;= DeadBand_used</span></span>
+<span id="cb89-28"><a href="#cb89-28" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
+<span id="cb89-29"><a href="#cb89-29" aria-hidden="true" tabindex="-1"></a><span class="co"># ) +</span></span>
+<span id="cb89-30"><a href="#cb89-30" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_point(size = 1.8) +</span></span>
+<span id="cb89-31"><a href="#cb89-31" aria-hidden="true" tabindex="-1"></a><span class="co">#   facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +</span></span>
+<span id="cb89-32"><a href="#cb89-32" aria-hidden="true" tabindex="-1"></a><span class="co">#   scale_color_manual(</span></span>
+<span id="cb89-33"><a href="#cb89-33" aria-hidden="true" tabindex="-1"></a><span class="co">#     values = c("grey60", "red"),</span></span>
+<span id="cb89-34"><a href="#cb89-34" aria-hidden="true" tabindex="-1"></a><span class="co">#     labels = c("Discarded (deadband)", "Used after deadband")</span></span>
+<span id="cb89-35"><a href="#cb89-35" aria-hidden="true" tabindex="-1"></a><span class="co">#   ) +</span></span>
+<span id="cb89-36"><a href="#cb89-36" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme_classic() +</span></span>
+<span id="cb89-37"><a href="#cb89-37" aria-hidden="true" tabindex="-1"></a><span class="co">#   ylab(expression(paste(CO[2], " (ppm)"))) +</span></span>
+<span id="cb89-38"><a href="#cb89-38" aria-hidden="true" tabindex="-1"></a><span class="co">#   xlab("Time")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="spot-check-a-few-fluxes-with-r2-0.9" class="level2">
@@ -1138,23 +1150,23 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 <section id="see-if-we-want-to-remove-these-fluxes-or-if-we-want-to-try-and-recalculate-these-ones" class="level2">
 <h2 class="anchored" data-anchor-id="see-if-we-want-to-remove-these-fluxes-or-if-we-want-to-try-and-recalculate-these-ones">See if we want to remove these fluxes or if we want to try and recalculate these ones?</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="do">### pull out fluxes with R2 &lt; 0.9 and put them in a list </span></span>
-<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>bad_plots <span class="ot">&lt;-</span> <span class="fu">unique</span>(fluxes_weird<span class="sc">$</span>Plot)</span>
-<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a><span class="co"># take a random sample (FALSE so we don't get the same plot twice)</span></span>
-<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(...) to guarantee reproducibility</span></span>
-<span id="cb102-6"><a href="#cb102-6" aria-hidden="true" tabindex="-1"></a>bad_sample <span class="ot">&lt;-</span> <span class="fu">sample</span>(bad_plots, <span class="dv">5</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb102-7"><a href="#cb102-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-8"><a href="#cb102-8" aria-hidden="true" tabindex="-1"></a><span class="co">#Loop to run five random plots subset above </span></span>
-<span id="cb102-9"><a href="#cb102-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(P <span class="cf">in</span> bad_sample){ </span>
-<span id="cb102-10"><a href="#cb102-10" aria-hidden="true" tabindex="-1"></a>  r1 <span class="ot">&lt;-</span> <span class="fu">subset</span>(alldat_matched , Plot <span class="sc">==</span> P <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
-<span id="cb102-11"><a href="#cb102-11" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(r1, <span class="fu">aes</span>(TIMESTAMP, CH4)) <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
-<span id="cb102-12"><a href="#cb102-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_datetime</span>(<span class="at">breaks =</span> <span class="st">"15 sec"</span>) <span class="sc">+</span> </span>
-<span id="cb102-13"><a href="#cb102-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" (ppb)"</span>))) <span class="sc">+</span></span>
-<span id="cb102-14"><a href="#cb102-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Time"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> P) <span class="sc">+</span></span>
-<span id="cb102-15"><a href="#cb102-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>()</span>
-<span id="cb102-16"><a href="#cb102-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(p1)</span>
-<span id="cb102-17"><a href="#cb102-17" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="do">### pull out fluxes with R2 &lt; 0.9 and put them in a list </span></span>
+<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>bad_plots <span class="ot">&lt;-</span> <span class="fu">unique</span>(fluxes_weird<span class="sc">$</span>Plot)</span>
+<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a><span class="co"># take a random sample (FALSE so we don't get the same plot twice)</span></span>
+<span id="cb104-5"><a href="#cb104-5" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(...) to guarantee reproducibility</span></span>
+<span id="cb104-6"><a href="#cb104-6" aria-hidden="true" tabindex="-1"></a>bad_sample <span class="ot">&lt;-</span> <span class="fu">sample</span>(bad_plots, <span class="dv">5</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb104-7"><a href="#cb104-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-8"><a href="#cb104-8" aria-hidden="true" tabindex="-1"></a><span class="co">#Loop to run five random plots subset above </span></span>
+<span id="cb104-9"><a href="#cb104-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(P <span class="cf">in</span> bad_sample){ </span>
+<span id="cb104-10"><a href="#cb104-10" aria-hidden="true" tabindex="-1"></a>  r1 <span class="ot">&lt;-</span> <span class="fu">subset</span>(alldat_matched , Plot <span class="sc">==</span> P <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
+<span id="cb104-11"><a href="#cb104-11" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(r1, <span class="fu">aes</span>(TIMESTAMP, CH4)) <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
+<span id="cb104-12"><a href="#cb104-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_datetime</span>(<span class="at">breaks =</span> <span class="st">"15 sec"</span>) <span class="sc">+</span> </span>
+<span id="cb104-13"><a href="#cb104-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" (ppb)"</span>))) <span class="sc">+</span></span>
+<span id="cb104-14"><a href="#cb104-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Time"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> P) <span class="sc">+</span></span>
+<span id="cb104-15"><a href="#cb104-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>()</span>
+<span id="cb104-16"><a href="#cb104-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(p1)</span>
+<span id="cb104-17"><a href="#cb104-17" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -1205,29 +1217,29 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="do">####################</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="do">####################</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="look-at-the-really-high-or-really-low-ones-to-see-if-there-is-a-timing-issue-or-something" class="level2">
 <h2 class="anchored" data-anchor-id="look-at-the-really-high-or-really-low-ones-to-see-if-there-is-a-timing-issue-or-something">Look at the really high or really low ones to see if there is a timing issue or something</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="do">### pull out fluxes in the 5% and 95% tails to look at really high and really low </span></span>
-<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>tail_plots <span class="ot">&lt;-</span> <span class="fu">unique</span>(tails<span class="sc">$</span>Plot)</span>
-<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a><span class="co"># take a random sample (FALSE so we don't get the same plot twice)</span></span>
-<span id="cb109-5"><a href="#cb109-5" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(...) to guarantee reproducibility</span></span>
-<span id="cb109-6"><a href="#cb109-6" aria-hidden="true" tabindex="-1"></a>tail_sample <span class="ot">&lt;-</span> <span class="fu">sample</span>(tail_plots, <span class="dv">2</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb109-7"><a href="#cb109-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb109-8"><a href="#cb109-8" aria-hidden="true" tabindex="-1"></a><span class="co">#Loop to run five random plots subset above </span></span>
-<span id="cb109-9"><a href="#cb109-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(P <span class="cf">in</span> tail_sample){ </span>
-<span id="cb109-10"><a href="#cb109-10" aria-hidden="true" tabindex="-1"></a>  r1 <span class="ot">&lt;-</span> <span class="fu">subset</span>(alldat_matched , Plot <span class="sc">==</span> P <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
-<span id="cb109-11"><a href="#cb109-11" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(r1, <span class="fu">aes</span>(TIMESTAMP, CH4)) <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
-<span id="cb109-12"><a href="#cb109-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_datetime</span>(<span class="at">breaks =</span> <span class="st">"15 sec"</span>) <span class="sc">+</span> </span>
-<span id="cb109-13"><a href="#cb109-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH4 [<span class="dv">4</span>], <span class="st">" (ppb)"</span>))) <span class="sc">+</span></span>
-<span id="cb109-14"><a href="#cb109-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Time"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> P) <span class="sc">+</span> </span>
-<span id="cb109-15"><a href="#cb109-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>()</span>
-<span id="cb109-16"><a href="#cb109-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(p1)</span>
-<span id="cb109-17"><a href="#cb109-17" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="do">### pull out fluxes in the 5% and 95% tails to look at really high and really low </span></span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>tail_plots <span class="ot">&lt;-</span> <span class="fu">unique</span>(tails<span class="sc">$</span>Plot)</span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a><span class="co"># take a random sample (FALSE so we don't get the same plot twice)</span></span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(...) to guarantee reproducibility</span></span>
+<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a>tail_sample <span class="ot">&lt;-</span> <span class="fu">sample</span>(tail_plots, <span class="dv">2</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a><span class="co">#Loop to run five random plots subset above </span></span>
+<span id="cb111-9"><a href="#cb111-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(P <span class="cf">in</span> tail_sample){ </span>
+<span id="cb111-10"><a href="#cb111-10" aria-hidden="true" tabindex="-1"></a>  r1 <span class="ot">&lt;-</span> <span class="fu">subset</span>(alldat_matched , Plot <span class="sc">==</span> P <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
+<span id="cb111-11"><a href="#cb111-11" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(r1, <span class="fu">aes</span>(TIMESTAMP, CH4)) <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
+<span id="cb111-12"><a href="#cb111-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_datetime</span>(<span class="at">breaks =</span> <span class="st">"15 sec"</span>) <span class="sc">+</span> </span>
+<span id="cb111-13"><a href="#cb111-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH4 [<span class="dv">4</span>], <span class="st">" (ppb)"</span>))) <span class="sc">+</span></span>
+<span id="cb111-14"><a href="#cb111-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Time"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> P) <span class="sc">+</span> </span>
+<span id="cb111-15"><a href="#cb111-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>()</span>
+<span id="cb111-16"><a href="#cb111-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(p1)</span>
+<span id="cb111-17"><a href="#cb111-17" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -1248,32 +1260,32 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a><span class="co">#would be nice to put on the plot the flux estimate and if it is a high or low or something </span></span>
-<span id="cb112-2"><a href="#cb112-2" aria-hidden="true" tabindex="-1"></a><span class="do">####################</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co">#would be nice to put on the plot the flux estimate and if it is a high or low or something </span></span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a><span class="do">####################</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="check-all-fluxes" class="level2">
 <h2 class="anchored" data-anchor-id="check-all-fluxes">Check all fluxes</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="do">##Put all fluxes together</span></span>
-<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>fluxes_all <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
-<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a>all_plots <span class="ot">&lt;-</span> <span class="fu">unique</span>(fluxes_all<span class="sc">$</span>Plot)</span>
-<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a><span class="co"># take a random sample (FALSE so we don't get the same plot twice)</span></span>
-<span id="cb113-7"><a href="#cb113-7" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(...) to guarantee reproducibility</span></span>
-<span id="cb113-8"><a href="#cb113-8" aria-hidden="true" tabindex="-1"></a>all_sample <span class="ot">&lt;-</span> <span class="fu">sample</span>(all_plots, <span class="dv">5</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb113-9"><a href="#cb113-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-10"><a href="#cb113-10" aria-hidden="true" tabindex="-1"></a><span class="co">#Loop to run five random plots subset above</span></span>
-<span id="cb113-11"><a href="#cb113-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(P <span class="cf">in</span> all_sample){</span>
-<span id="cb113-12"><a href="#cb113-12" aria-hidden="true" tabindex="-1"></a>  r1 <span class="ot">&lt;-</span> <span class="fu">subset</span>(alldat_matched, Plot<span class="sc">==</span> P <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
-<span id="cb113-13"><a href="#cb113-13" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(r1, <span class="fu">aes</span>(TIMESTAMP, CH4)) <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb113-14"><a href="#cb113-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_datetime</span>(<span class="at">breaks =</span> <span class="st">"15 sec"</span>) <span class="sc">+</span></span>
-<span id="cb113-15"><a href="#cb113-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" (ppb)"</span>))) <span class="sc">+</span></span>
-<span id="cb113-16"><a href="#cb113-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Time"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> P) <span class="sc">+</span></span>
-<span id="cb113-17"><a href="#cb113-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">color=</span><span class="st">"red"</span>)</span>
-<span id="cb113-18"><a href="#cb113-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(p1)</span>
-<span id="cb113-19"><a href="#cb113-19" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a><span class="do">##Put all fluxes together</span></span>
+<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>fluxes_all <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">subset</span>(fluxes, <span class="at">select =</span> Plot<span class="sc">:</span>TIMESTAMP_max))</span>
+<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>all_plots <span class="ot">&lt;-</span> <span class="fu">unique</span>(fluxes_all<span class="sc">$</span>Plot)</span>
+<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a><span class="co"># take a random sample (FALSE so we don't get the same plot twice)</span></span>
+<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(...) to guarantee reproducibility</span></span>
+<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>all_sample <span class="ot">&lt;-</span> <span class="fu">sample</span>(all_plots, <span class="dv">5</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a><span class="co">#Loop to run five random plots subset above</span></span>
+<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(P <span class="cf">in</span> all_sample){</span>
+<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>  r1 <span class="ot">&lt;-</span> <span class="fu">subset</span>(alldat_matched, Plot<span class="sc">==</span> P <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(metadat_row))</span>
+<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a>  p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(r1, <span class="fu">aes</span>(TIMESTAMP, CH4)) <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb115-14"><a href="#cb115-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_datetime</span>(<span class="at">breaks =</span> <span class="st">"15 sec"</span>) <span class="sc">+</span></span>
+<span id="cb115-15"><a href="#cb115-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" (ppb)"</span>))) <span class="sc">+</span></span>
+<span id="cb115-16"><a href="#cb115-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Time"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> P) <span class="sc">+</span></span>
+<span id="cb115-17"><a href="#cb115-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">color=</span><span class="st">"red"</span>)</span>
+<span id="cb115-18"><a href="#cb115-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(p1)</span>
+<span id="cb115-19"><a href="#cb115-19" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -1324,45 +1336,42 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a><span class="do">####################</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="do">####################</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="remove-any-fluxes-that-do-not-fit-criteria" class="level2">
 <h2 class="anchored" data-anchor-id="remove-any-fluxes-that-do-not-fit-criteria">Remove any fluxes that do not fit criteria</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb120"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a new dataframe by removing rows that were present in fluxes_weird (11 obs)</span></span>
-<span id="cb120-2"><a href="#cb120-2" aria-hidden="true" tabindex="-1"></a><span class="co">#allflux_filtered &lt;- allflux[!(allflux$Plot %in% fluxes_weird$Plo), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad</span></span>
-<span id="cb120-3"><a href="#cb120-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb120-4"><a href="#cb120-4" aria-hidden="true" tabindex="-1"></a><span class="co">#Any others that are not in the weird category that need to be removed: </span></span>
-<span id="cb120-5"><a href="#cb120-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#also removing ones that are crazy off but were not in the fluxes_weird dataframe </span></span>
-<span id="cb120-6"><a href="#cb120-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb120-7"><a href="#cb120-7" aria-hidden="true" tabindex="-1"></a>allflux_filtered <span class="ot">&lt;-</span> fluxes_all <span class="co">#%&gt;%</span></span>
-<span id="cb120-8"><a href="#cb120-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(!Plot %in% c("2022_09_23_PTR_TR_9_1", #leak </span></span>
-<span id="cb120-9"><a href="#cb120-9" aria-hidden="true" tabindex="-1"></a><span class="co">#                          "2022_07_07_PTR_TR_9_1", #leak</span></span>
-<span id="cb120-10"><a href="#cb120-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                          "2022_07_08_CRC_TR_36_1" #plateau + sharp increase - soil disturbed during measurement?</span></span>
-<span id="cb120-11"><a href="#cb120-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                       ))</span></span>
-<span id="cb120-12"><a href="#cb120-12" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb120-13"><a href="#cb120-13" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb120-14"><a href="#cb120-14" aria-hidden="true" tabindex="-1"></a><span class="co"># # View the result</span></span>
-<span id="cb120-15"><a href="#cb120-15" aria-hidden="true" tabindex="-1"></a><span class="co"># head(allflux_filtered)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a new dataframe by removing rows that were present in fluxes_weird (11 obs)</span></span>
+<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a><span class="co">#allflux_filtered &lt;- allflux[!(allflux$Plot %in% fluxes_weird$Plo), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad</span></span>
+<span id="cb122-3"><a href="#cb122-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb122-4"><a href="#cb122-4" aria-hidden="true" tabindex="-1"></a><span class="co">#Any others that are not in the weird category that need to be removed: </span></span>
+<span id="cb122-5"><a href="#cb122-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#also removing ones that are crazy off but were not in the fluxes_weird dataframe </span></span>
+<span id="cb122-6"><a href="#cb122-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb122-7"><a href="#cb122-7" aria-hidden="true" tabindex="-1"></a>allflux_filtered <span class="ot">&lt;-</span> fluxes_all <span class="sc">%&gt;%</span></span>
+<span id="cb122-8"><a href="#cb122-8" aria-hidden="true" tabindex="-1"></a>   <span class="fu">filter</span>(<span class="sc">!</span>Plot <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"02/24/2022_PTR_TR_6_101"</span>    ))</span>
+<span id="cb122-9"><a href="#cb122-9" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb122-10"><a href="#cb122-10" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb122-11"><a href="#cb122-11" aria-hidden="true" tabindex="-1"></a><span class="co"># # View the result</span></span>
+<span id="cb122-12"><a href="#cb122-12" aria-hidden="true" tabindex="-1"></a><span class="co"># head(allflux_filtered)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="do-some-visualization-of-qaqc-plots-to-assess-fluxes" class="level2">
 <h2 class="anchored" data-anchor-id="do-some-visualization-of-qaqc-plots-to-assess-fluxes">Do some visualization of QAQC plots to assess fluxes</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(lin_flux.estimate, rob_flux.estimate, <span class="at">color =</span> Plot)) <span class="sc">+</span></span>
-<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">geom_abline</span>() <span class="sc">+</span> </span>
-<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
-<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"A"</span>) <span class="sc">+</span> </span>
-<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") Robust Method"</span>))) <span class="sc">+</span></span>
-<span id="cb121-6"><a href="#cb121-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") Linear Method"</span>))) <span class="sc">+</span></span>
-<span id="cb121-7"><a href="#cb121-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">"Plot"</span>)) <span class="sc">+</span></span>
-<span id="cb121-8"><a href="#cb121-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"none"</span>) <span class="sc">+</span></span>
-<span id="cb121-9"><a href="#cb121-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
-<span id="cb121-10"><a href="#cb121-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">legend.text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
-<span id="cb121-11"><a href="#cb121-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>, <span class="at">fill=</span><span class="cn">NA</span>, <span class="at">linewidth =</span><span class="dv">1</span>), </span>
-<span id="cb121-12"><a href="#cb121-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span>
-<span id="cb121-13"><a href="#cb121-13" aria-hidden="true" tabindex="-1"></a>p1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(lin_flux.estimate, rob_flux.estimate, <span class="at">color =</span> Plot)) <span class="sc">+</span></span>
+<span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">geom_abline</span>() <span class="sc">+</span> </span>
+<span id="cb123-3"><a href="#cb123-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
+<span id="cb123-4"><a href="#cb123-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"A"</span>) <span class="sc">+</span> </span>
+<span id="cb123-5"><a href="#cb123-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") Robust Method"</span>))) <span class="sc">+</span></span>
+<span id="cb123-6"><a href="#cb123-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") Linear Method"</span>))) <span class="sc">+</span></span>
+<span id="cb123-7"><a href="#cb123-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">"Plot"</span>)) <span class="sc">+</span></span>
+<span id="cb123-8"><a href="#cb123-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb123-9"><a href="#cb123-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
+<span id="cb123-10"><a href="#cb123-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">legend.text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
+<span id="cb123-11"><a href="#cb123-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>, <span class="at">fill=</span><span class="cn">NA</span>, <span class="at">linewidth =</span><span class="dv">1</span>), </span>
+<span id="cb123-12"><a href="#cb123-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span>
+<span id="cb123-13"><a href="#cb123-13" aria-hidden="true" tabindex="-1"></a>p1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1370,20 +1379,20 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(lin_r.squared, poly_r.squared, <span class="at">color =</span> Plot)) <span class="sc">+</span></span>
-<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">geom_abline</span>() <span class="sc">+</span> </span>
-<span id="cb122-3"><a href="#cb122-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
-<span id="cb122-4"><a href="#cb122-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">1</span>) <span class="sc">+</span> <span class="fu">ylim</span>(<span class="dv">0</span>,<span class="dv">1</span>) <span class="sc">+</span></span>
-<span id="cb122-5"><a href="#cb122-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"B"</span>) <span class="sc">+</span> </span>
-<span id="cb122-6"><a href="#cb122-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"R"</span><span class="sc">^</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" Second-Order Polynomial"</span>))) <span class="sc">+</span></span>
-<span id="cb122-7"><a href="#cb122-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"R"</span><span class="sc">^</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" Linear Model"</span>))) <span class="sc">+</span></span>
-<span id="cb122-8"><a href="#cb122-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">"Plot_ID"</span>)) <span class="sc">+</span> </span>
-<span id="cb122-9"><a href="#cb122-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"none"</span>) <span class="sc">+</span></span>
-<span id="cb122-10"><a href="#cb122-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
-<span id="cb122-11"><a href="#cb122-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">legend.text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
-<span id="cb122-12"><a href="#cb122-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>, <span class="at">fill=</span><span class="cn">NA</span>, <span class="at">linewidth =</span><span class="dv">1</span>), </span>
-<span id="cb122-13"><a href="#cb122-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span>
-<span id="cb122-14"><a href="#cb122-14" aria-hidden="true" tabindex="-1"></a>p2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb124"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(lin_r.squared, poly_r.squared, <span class="at">color =</span> Plot)) <span class="sc">+</span></span>
+<span id="cb124-2"><a href="#cb124-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">geom_abline</span>() <span class="sc">+</span> </span>
+<span id="cb124-3"><a href="#cb124-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
+<span id="cb124-4"><a href="#cb124-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlim</span>(<span class="dv">0</span>,<span class="dv">1</span>) <span class="sc">+</span> <span class="fu">ylim</span>(<span class="dv">0</span>,<span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb124-5"><a href="#cb124-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"B"</span>) <span class="sc">+</span> </span>
+<span id="cb124-6"><a href="#cb124-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"R"</span><span class="sc">^</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" Second-Order Polynomial"</span>))) <span class="sc">+</span></span>
+<span id="cb124-7"><a href="#cb124-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"R"</span><span class="sc">^</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" Linear Model"</span>))) <span class="sc">+</span></span>
+<span id="cb124-8"><a href="#cb124-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">"Plot_ID"</span>)) <span class="sc">+</span> </span>
+<span id="cb124-9"><a href="#cb124-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb124-10"><a href="#cb124-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
+<span id="cb124-11"><a href="#cb124-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">legend.text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
+<span id="cb124-12"><a href="#cb124-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>, <span class="at">fill=</span><span class="cn">NA</span>, <span class="at">linewidth =</span><span class="dv">1</span>), </span>
+<span id="cb124-13"><a href="#cb124-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span>
+<span id="cb124-14"><a href="#cb124-14" aria-hidden="true" tabindex="-1"></a>p2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1391,21 +1400,21 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a>p3 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(lin_flux.estimate, HM81_flux.estimate, <span class="at">color =</span> lin_r.squared )) <span class="sc">+</span></span>
-<span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">geom_abline</span>() <span class="sc">+</span> </span>
-<span id="cb123-3"><a href="#cb123-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
-<span id="cb123-4"><a href="#cb123-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#xlim(0,50) + #ylim(0,50) +</span></span>
-<span id="cb123-5"><a href="#cb123-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"C"</span>) <span class="sc">+</span> </span>
-<span id="cb123-6"><a href="#cb123-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") HM1981 Method"</span>))) <span class="sc">+</span></span>
-<span id="cb123-7"><a href="#cb123-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") Linear Method"</span>))) <span class="sc">+</span></span>
-<span id="cb123-8"><a href="#cb123-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">"Plot_ID"</span>)) <span class="sc">+</span> </span>
-<span id="cb123-9"><a href="#cb123-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"right"</span>) <span class="sc">+</span></span>
-<span id="cb123-10"><a href="#cb123-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
-<span id="cb123-11"><a href="#cb123-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">legend.text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
-<span id="cb123-12"><a href="#cb123-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>, <span class="at">fill=</span><span class="cn">NA</span>, <span class="at">linewidth =</span><span class="dv">1</span>), </span>
-<span id="cb123-13"><a href="#cb123-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span>
-<span id="cb123-14"><a href="#cb123-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb123-15"><a href="#cb123-15" aria-hidden="true" tabindex="-1"></a>p3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb125"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a>p3 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(fluxes, <span class="fu">aes</span>(lin_flux.estimate, HM81_flux.estimate, <span class="at">color =</span> lin_r.squared )) <span class="sc">+</span></span>
+<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">4</span>) <span class="sc">+</span> <span class="fu">geom_abline</span>() <span class="sc">+</span> </span>
+<span id="cb125-3"><a href="#cb125-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span> </span>
+<span id="cb125-4"><a href="#cb125-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#xlim(0,50) + #ylim(0,50) +</span></span>
+<span id="cb125-5"><a href="#cb125-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"C"</span>) <span class="sc">+</span> </span>
+<span id="cb125-6"><a href="#cb125-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") HM1981 Method"</span>))) <span class="sc">+</span></span>
+<span id="cb125-7"><a href="#cb125-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">expression</span>(<span class="fu">paste</span>( CH [<span class="dv">4</span>], <span class="st">" Flux (nmol m"</span><span class="sc">^-</span><span class="dv">2</span><span class="sc">*</span> <span class="st">" s"</span><span class="sc">^-</span><span class="dv">1</span><span class="sc">*</span><span class="st">") Linear Method"</span>))) <span class="sc">+</span></span>
+<span id="cb125-8"><a href="#cb125-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">"Plot_ID"</span>)) <span class="sc">+</span> </span>
+<span id="cb125-9"><a href="#cb125-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"right"</span>) <span class="sc">+</span></span>
+<span id="cb125-10"><a href="#cb125-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
+<span id="cb125-11"><a href="#cb125-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), <span class="at">legend.text=</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>),</span>
+<span id="cb125-12"><a href="#cb125-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>, <span class="at">fill=</span><span class="cn">NA</span>, <span class="at">linewidth =</span><span class="dv">1</span>), </span>
+<span id="cb125-13"><a href="#cb125-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span>
+<span id="cb125-14"><a href="#cb125-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-15"><a href="#cb125-15" aria-hidden="true" tabindex="-1"></a>p3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: Removed 108 rows containing missing values or values outside the scale range
 (`geom_point()`).</code></pre>
@@ -1417,54 +1426,54 @@ NOTE: HM81_flux.estimate is not NA, implying nonlinear data</code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb125"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a><span class="co">#ggarrange(p1, p2, p3, ncol=3, nrow=1, common.legend = TRUE, legend="none")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb127"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1" aria-hidden="true" tabindex="-1"></a><span class="co">#ggarrange(p1, p2, p3, ncol=3, nrow=1, common.legend = TRUE, legend="none")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="read-out-final-dataframe-and-export-for-use-elsewhere" class="level2">
 <h2 class="anchored" data-anchor-id="read-out-final-dataframe-and-export-for-use-elsewhere">Read out final dataframe and export for use elsewhere</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a>allflux_filtered_renamed <span class="ot">&lt;-</span> fluxes <span class="sc">%&gt;%</span></span>
-<span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb126-3"><a href="#cb126-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">Date =</span> <span class="fu">mdy</span>(<span class="fu">str_extract</span>(Plot, <span class="st">"^[0-9]+/[0-9]+/[0-9]{4}"</span>)),</span>
-<span id="cb126-4"><a href="#cb126-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Month =</span> month.abb[<span class="fu">month</span>(Date)],</span>
-<span id="cb126-5"><a href="#cb126-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">Site =</span> <span class="fu">str_extract</span>(Plot, <span class="st">"(PTR|OWC|CRC)"</span>),</span>
-<span id="cb126-6"><a href="#cb126-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">Zone =</span> <span class="fu">str_extract</span>(Plot, <span class="st">"_TR_|_UP_"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb126-7"><a href="#cb126-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_remove_all</span>(<span class="st">"_"</span>),</span>
-<span id="cb126-8"><a href="#cb126-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">Replicate =</span> <span class="fu">as.integer</span>(</span>
-<span id="cb126-9"><a href="#cb126-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_extract</span>(Plot, <span class="st">"(?&lt;=_(TR|UP)_)[0-9]+"</span>)</span>
-<span id="cb126-10"><a href="#cb126-10" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb126-11"><a href="#cb126-11" aria-hidden="true" tabindex="-1"></a>   <span class="at">Plot_ID =</span> <span class="fu">as.integer</span>(</span>
-<span id="cb126-12"><a href="#cb126-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_extract</span>(Plot, <span class="st">"[0-9]+$"</span>)) ) <span class="sc">%&gt;%</span></span>
-<span id="cb126-13"><a href="#cb126-13" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb126-14"><a href="#cb126-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: rebuild a clean Plot label</span></span>
-<span id="cb126-15"><a href="#cb126-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb126-16"><a href="#cb126-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">Plot_clean =</span> <span class="fu">paste</span>(</span>
-<span id="cb126-17"><a href="#cb126-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">format</span>(Date, <span class="st">"%Y-%m-%d"</span>),</span>
-<span id="cb126-18"><a href="#cb126-18" aria-hidden="true" tabindex="-1"></a>      Site,</span>
-<span id="cb126-19"><a href="#cb126-19" aria-hidden="true" tabindex="-1"></a>      Zone,</span>
-<span id="cb126-20"><a href="#cb126-20" aria-hidden="true" tabindex="-1"></a>      Replicate,</span>
-<span id="cb126-21"><a href="#cb126-21" aria-hidden="true" tabindex="-1"></a>      Plot_ID,</span>
-<span id="cb126-22"><a href="#cb126-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">sep =</span> <span class="st">"_"</span></span>
-<span id="cb126-23"><a href="#cb126-23" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb126-24"><a href="#cb126-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb126-25"><a href="#cb126-25" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb126-26"><a href="#cb126-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
-<span id="cb126-27"><a href="#cb126-27" aria-hidden="true" tabindex="-1"></a>    Plot_clean,</span>
-<span id="cb126-28"><a href="#cb126-28" aria-hidden="true" tabindex="-1"></a>    Date,</span>
-<span id="cb126-29"><a href="#cb126-29" aria-hidden="true" tabindex="-1"></a>    Month,</span>
-<span id="cb126-30"><a href="#cb126-30" aria-hidden="true" tabindex="-1"></a>    Site,</span>
-<span id="cb126-31"><a href="#cb126-31" aria-hidden="true" tabindex="-1"></a>    Zone,</span>
-<span id="cb126-32"><a href="#cb126-32" aria-hidden="true" tabindex="-1"></a>    Replicate,</span>
-<span id="cb126-33"><a href="#cb126-33" aria-hidden="true" tabindex="-1"></a>    Plot_ID,</span>
-<span id="cb126-34"><a href="#cb126-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">everything</span>(),</span>
-<span id="cb126-35"><a href="#cb126-35" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span>Plot</span>
-<span id="cb126-36"><a href="#cb126-36" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb126-37"><a href="#cb126-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb126-38"><a href="#cb126-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb126-39"><a href="#cb126-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb126-40"><a href="#cb126-40" aria-hidden="true" tabindex="-1"></a><span class="co">#export as a csv to the folder that you want</span></span>
-<span id="cb126-41"><a href="#cb126-41" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(allflux_filtered_renamed, <span class="at">file=</span><span class="st">"Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2023_CH4.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb126-42"><a href="#cb126-42" aria-hidden="true" tabindex="-1"></a><span class="co"># #Change file name</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb128"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a>allflux_filtered_renamed <span class="ot">&lt;-</span> fluxes <span class="sc">%&gt;%</span></span>
+<span id="cb128-2"><a href="#cb128-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb128-3"><a href="#cb128-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">Date =</span> <span class="fu">mdy</span>(<span class="fu">str_extract</span>(Plot, <span class="st">"^[0-9]+/[0-9]+/[0-9]{4}"</span>)),</span>
+<span id="cb128-4"><a href="#cb128-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Month =</span> month.abb[<span class="fu">month</span>(Date)],</span>
+<span id="cb128-5"><a href="#cb128-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">Site =</span> <span class="fu">str_extract</span>(Plot, <span class="st">"(PTR|OWC|CRC)"</span>),</span>
+<span id="cb128-6"><a href="#cb128-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">Zone =</span> <span class="fu">str_extract</span>(Plot, <span class="st">"_TR_|_UP_"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb128-7"><a href="#cb128-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_remove_all</span>(<span class="st">"_"</span>),</span>
+<span id="cb128-8"><a href="#cb128-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">Replicate =</span> <span class="fu">as.integer</span>(</span>
+<span id="cb128-9"><a href="#cb128-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_extract</span>(Plot, <span class="st">"(?&lt;=_(TR|UP)_)[0-9]+"</span>)</span>
+<span id="cb128-10"><a href="#cb128-10" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb128-11"><a href="#cb128-11" aria-hidden="true" tabindex="-1"></a>   <span class="at">Plot_ID =</span> <span class="fu">as.integer</span>(</span>
+<span id="cb128-12"><a href="#cb128-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_extract</span>(Plot, <span class="st">"[0-9]+$"</span>)) ) <span class="sc">%&gt;%</span></span>
+<span id="cb128-13"><a href="#cb128-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb128-14"><a href="#cb128-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: rebuild a clean Plot label</span></span>
+<span id="cb128-15"><a href="#cb128-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb128-16"><a href="#cb128-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">Plot_clean =</span> <span class="fu">paste</span>(</span>
+<span id="cb128-17"><a href="#cb128-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">format</span>(Date, <span class="st">"%Y-%m-%d"</span>),</span>
+<span id="cb128-18"><a href="#cb128-18" aria-hidden="true" tabindex="-1"></a>      Site,</span>
+<span id="cb128-19"><a href="#cb128-19" aria-hidden="true" tabindex="-1"></a>      Zone,</span>
+<span id="cb128-20"><a href="#cb128-20" aria-hidden="true" tabindex="-1"></a>      Replicate,</span>
+<span id="cb128-21"><a href="#cb128-21" aria-hidden="true" tabindex="-1"></a>      Plot_ID,</span>
+<span id="cb128-22"><a href="#cb128-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">sep =</span> <span class="st">"_"</span></span>
+<span id="cb128-23"><a href="#cb128-23" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb128-24"><a href="#cb128-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb128-25"><a href="#cb128-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb128-26"><a href="#cb128-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb128-27"><a href="#cb128-27" aria-hidden="true" tabindex="-1"></a>    Plot_clean,</span>
+<span id="cb128-28"><a href="#cb128-28" aria-hidden="true" tabindex="-1"></a>    Date,</span>
+<span id="cb128-29"><a href="#cb128-29" aria-hidden="true" tabindex="-1"></a>    Month,</span>
+<span id="cb128-30"><a href="#cb128-30" aria-hidden="true" tabindex="-1"></a>    Site,</span>
+<span id="cb128-31"><a href="#cb128-31" aria-hidden="true" tabindex="-1"></a>    Zone,</span>
+<span id="cb128-32"><a href="#cb128-32" aria-hidden="true" tabindex="-1"></a>    Replicate,</span>
+<span id="cb128-33"><a href="#cb128-33" aria-hidden="true" tabindex="-1"></a>    Plot_ID,</span>
+<span id="cb128-34"><a href="#cb128-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">everything</span>(),</span>
+<span id="cb128-35"><a href="#cb128-35" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span>Plot</span>
+<span id="cb128-36"><a href="#cb128-36" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb128-37"><a href="#cb128-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-38"><a href="#cb128-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-39"><a href="#cb128-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb128-40"><a href="#cb128-40" aria-hidden="true" tabindex="-1"></a><span class="co">#export as a csv to the folder that you want</span></span>
+<span id="cb128-41"><a href="#cb128-41" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(allflux_filtered_renamed, <span class="at">file=</span><span class="st">"Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2023_CH4.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb128-42"><a href="#cb128-42" aria-hidden="true" tabindex="-1"></a><span class="co"># #Change file name</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="section" class="level2">
