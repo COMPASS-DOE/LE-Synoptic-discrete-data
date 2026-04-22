@@ -33,10 +33,13 @@ ch4 <- read.csv(
 
 ch4 <-ch4 %>%
   mutate(
-    TIMESTAMP     = ymd_hms(TIMESTAMP),
-    TIMESTAMP_min = ymd_hms(TIMESTAMP_min),
-    TIMESTAMP_max = ymd_hms(TIMESTAMP_max),
-    Date          = ymd(Date),
+    #TIMESTAMP     = ymd_hms(TIMESTAMP),
+    #TIMESTAMP_min = ymd_hms(TIMESTAMP_min),
+    #TIMESTAMP_max = ymd_hms(TIMESTAMP_max),
+    TIMESTAMP_min = mdy_hm(TIMESTAMP_min),
+    TIMESTAMP_max = mdy_hm(TIMESTAMP_max),
+    #Date  = ymd(Date),
+    Date  = mdy(Date),
     Site  = factor(str_trim(Site)),
     Zone  = factor(str_trim(Zone)),
     Month = factor(str_trim(Month), levels = month.abb),
@@ -52,7 +55,7 @@ ch4 <-ch4 %>%
     matches("^(HM81_|lin_|poly_|rob_)")
   ) %>%
   mutate(
-    TIMESTAMP = round(TIMESTAMP, "secs")
+    TIMESTAMP = round(TIMESTAMP_min, "secs")
   )
 
 
@@ -62,11 +65,13 @@ co2 <- read.csv("Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2022_C
 
 co2 <-co2 %>%
   mutate(
-    TIMESTAMP     = ymd_hms(TIMESTAMP),
-    TIMESTAMP_min = ymd_hms(TIMESTAMP_min),
-    TIMESTAMP_max = ymd_hms(TIMESTAMP_max),
-    Date          = ymd(Date),
-
+    #TIMESTAMP     = ymd_hms(TIMESTAMP),
+    #TIMESTAMP_min = ymd_hms(TIMESTAMP_min),
+    #TIMESTAMP_max = ymd_hms(TIMESTAMP_max),
+    TIMESTAMP_min = mdy_hm(TIMESTAMP_min),
+    TIMESTAMP_max = mdy_hm(TIMESTAMP_max),
+    #Date  = ymd(Date),
+    Date  = mdy(Date),
     Site  = factor(str_trim(Site)),
     Zone  = factor(str_trim(Zone)),
     Month = factor(str_trim(Month), levels = month.abb),
@@ -82,7 +87,7 @@ co2 <-co2 %>%
     matches("^(HM81_|lin_|poly_|rob_)")
   ) %>%
   mutate(
-    TIMESTAMP = round(TIMESTAMP, "secs")
+    TIMESTAMP = round(TIMESTAMP_min, "secs")
   )
 
 # Combine all files

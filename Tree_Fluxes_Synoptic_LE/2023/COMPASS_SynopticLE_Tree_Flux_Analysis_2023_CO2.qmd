@@ -1,7 +1,7 @@
 ---
 title: "COMPASS_Synoptic_LE_Tree_GHG_Flux_Calcs_2023"
 author: "Roberta Peixoto"
-date: "2026-04-17"
+date: "`r Sys.Date()`"
 output: 
   html_document:
     self_contained: true 
@@ -95,7 +95,7 @@ print(head(alldat))
 ## Read in metadata file and match to raw data
 
 ```{r}
-md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2022b.csv"
+md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2023.csv"
 dat <- read.csv(md)
 
 metadat <- dat %>%
@@ -107,8 +107,10 @@ metadat <- dat %>%
   mutate(
     Plot_raw = toupper(Plot),
     # Extract plot components 
-    Site = str_extract(Plot_raw, "^[A-Z]{3}"),
-    Zone = str_extract(Plot_raw, "(TR|UP)"),
+    #Site = str_extract(Plot_raw, "^[A-Z]{3}"),
+    #Zone = str_extract(Plot_raw, "(TR|UP)"), # somehow all of the PTR measurements turned into TR
+    Site = toupper(Site),
+    Zone = toupper(Zone), 
     Replicate = str_extract(Plot_raw, "(?<=TR|UP)[0-9]+"),
     # Letter ONLY if it comes AFTER a number
     Letter = str_extract(Plot_raw, "(?<=[0-9])[A-Z]$"),
@@ -275,9 +277,9 @@ head(alldat_matched)
 saveRDS(alldat_matched, file = "alldat_matched_2023.rds")
 
 
-#can remove any row that have NA's in the CH4 column 
+#can remove any row that have NA's in the CO2 column 
 #alldat <- alldat %>%
- # filter(!is.na(CH4))
+ # filter(!is.na(CO2))
 
 ```
 
@@ -349,18 +351,18 @@ alldat_matched <- alldat_matched %>%
 
 # TO Do - NEED TO PULL TEMP from the weather station
 #change the units
-alldat_matched $CH4_nmol <- ffi_ppb_to_nmol(alldat_matched $CH4, 
-                                volume = alldat_matched $Volume, # m3
-                                temp = alldat_matched $Temp)    # degrees C
+alldat_matched$CO2_umol <- ffi_ppb_to_nmol(alldat_matched$CO2, 
+                                volume = alldat_matched$Volume, # m3
+                                temp = alldat_matched$Temp)    # degrees C
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_matched $CH4_nmol_m2 <- alldat_matched $CH4_nmol / 0.16
+alldat_matched$CO2_umol_m2 <- alldat_matched$CO2_umol / 0.16
 
 fluxes <- ffi_compute_fluxes(alldat_matched ,
                              group_column = "Plot", 
                              time_column = "TIMESTAMP", 
-                             gas_column = "CH4_nmol_m2", 
+                             gas_column = "CO2_umol_m2", 
                              dead_band = "DeadBand_used")
 head(fluxes)
 
@@ -371,7 +373,7 @@ ggplot(fluxes, aes(Plot, lin_flux.estimate, color = lin_r.squared)) +
                    ymax = lin_flux.estimate+ lin_flux.std.error)) +
   scale_color_gradientn(colours = c("darkred",  "red", "white","lightblue", "darkblue"),
                         values = c(0, 0.5, 0.6, 0.7, 1)) +
-  ylab("CH4 flux (nmol/m2/s)")
+  ylab("CO2 flux (umol/m2/s)")
 
 #sort fluxes by R2 
 fluxes_good <- as.data.frame(subset(fluxes, lin_r.squared >= .90, select = Plot:TIMESTAMP_max))
@@ -445,10 +447,10 @@ good_sample <- sample(good_plots, 9, replace=FALSE)
 #Loop to run five random plots subset above 
 for(P in good_sample){ 
   r1 <- subset(alldat_matched, Plot == P & !is.na(metadat_row))
-  p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), CH4)) + geom_point() + 
+  p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), CO2)) + geom_point() + 
   scale_x_datetime(breaks = "15 sec") + 
   theme_classic() +
-  ylab(expression(paste( CH [4], " (ppb)"))) +
+  ylab(expression(paste( CO [2], " (ppm)"))) +
   xlab("Time") + labs(title = P) + 
   geom_smooth()
   print(p1)
@@ -474,9 +476,9 @@ low_sample <- sample(low_plots, 5, replace=FALSE)
 #Loop to run five random plots subset above 
 for(P in low_sample){ 
   r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
-  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
+  p1 <- ggplot(r1, aes(TIMESTAMP, CO2)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") + 
-  ylab(expression(paste( CH [4], " (ppb)"))) +
+  ylab(expression(paste( CO [2], " (ppm)"))) +
   xlab("Time") + labs(title = P) + 
   geom_smooth()
   print(p1)
@@ -500,9 +502,9 @@ bad_sample <- sample(bad_plots, 5, replace=FALSE)
 #Loop to run five random plots subset above 
 for(P in bad_sample){ 
   r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
-  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
+  p1 <- ggplot(r1, aes(TIMESTAMP, CO2)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
-  ylab(expression(paste( CH [4], " (ppb)"))) +
+  ylab(expression(paste( CO [2], " (ppm)"))) +
   xlab("Time") + labs(title = P) +
   geom_smooth()
   print(p1)
@@ -524,9 +526,9 @@ tail_sample <- sample(tail_plots, 2, replace=FALSE)
 #Loop to run five random plots subset above 
 for(P in tail_sample){ 
   r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
-  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
+  p1 <- ggplot(r1, aes(TIMESTAMP, CO2)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
-  ylab(expression(paste( CH4 [4], " (ppb)"))) +
+  ylab(expression(paste( CO [2], " (ppm)"))) +
   xlab("Time") + labs(title = P) + 
   geom_smooth()
   print(p1)
@@ -551,9 +553,9 @@ all_sample <- sample(all_plots, 5, replace=FALSE)
 #Loop to run five random plots subset above
 for(P in all_sample){
   r1 <- subset(alldat_matched, Plot== P & !is.na(metadat_row))
-  p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
+  p1 <- ggplot(r1, aes(TIMESTAMP, CO2)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") +
-  ylab(expression(paste( CH [4], " (ppb)"))) +
+  ylab(expression(paste( CO [2], " (ppm)"))) +
   xlab("Time") + labs(title = P) +
   geom_smooth(color="red")
   print(p1)
@@ -591,8 +593,8 @@ p1 <- ggplot(fluxes, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   labs(title = "A") + 
-  ylab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Robust Method"))) +
-  xlab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Linear Method"))) +
+  ylab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") Robust Method"))) +
+  xlab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") Linear Method"))) +
   guides(color = guide_legend(title = "Plot")) +
   theme(legend.position="none") +
   theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
@@ -621,8 +623,8 @@ p3 <- ggplot(fluxes, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.sq
   theme_classic() + 
   #xlim(0,50) + #ylim(0,50) +
   labs(title = "C") + 
-  ylab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") HM1981 Method"))) +
-  xlab(expression(paste( CH [4], " Flux (nmol m"^-2* " s"^-1*") Linear Method"))) +
+  ylab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") HM1981 Method"))) +
+  xlab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") Linear Method"))) +
   guides(color = guide_legend(title = "Plot_ID")) + 
   theme(legend.position="right") +
   theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
@@ -679,7 +681,7 @@ allflux_filtered_renamed <- fluxes %>%
 
 
 #export as a csv to the folder that you want
-write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2023_CH4.csv", row.names = FALSE)
+write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2023_CO2.csv", row.names = FALSE)
 # #Change file name
 ```
 
