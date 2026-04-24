@@ -16,13 +16,13 @@ lapply(c( "fluxfinder", "readxl",
   "dplyr", "ggplot2", "ggpubr", "stringr",
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
-  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "kableExtra"), 
+  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "kableExtra", "arrow"), 
   library, character.only = TRUE)
 ```
 
 ## Pull in Raw Datafiles
 
-```{#r}
+```{r}
 #defining where the raw data is
 
 DATA_DIR_ROOT <- here::here(
@@ -97,7 +97,7 @@ alldat<-alldat%>%filter(CO2>-1000)
 
 ## Read in metadata file and match to raw data
 
-```{#r}
+```{r}
 md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2022b.csv"
 dat <- read.csv(md)
 
@@ -146,7 +146,7 @@ head(metadat$Plot)
 
 ## Check start times overlapsor missing values
 
-```{#r}
+```{r}
 
 #checking if there is any start and stop time overlap from the field notes
 overlaps_detected <- metadat %>%
@@ -210,7 +210,7 @@ print(field_notes_overlap)
 
 ## Match metadata to raw data
 
-```{#r}
+```{r}
 #function to match data per equipment (considering different serial numbers) uhul!
 match_flux_metadata <- function(alldat, metadat) {
   message("Starting metadata ↔ Licor matching")
@@ -251,6 +251,8 @@ match_flux_metadata <- function(alldat, metadat) {
     dat_i <- dat_i %>%
       mutate(
         Plot      = meta_i$Plot[metadat_row],
+        Site      = meta_i$Site[metadat_row],
+        Zone      = meta_i$Zone[metadat_row],
         Volume    = meta_i$Volume[metadat_row],
         Temp      = meta_i$Temp[metadat_row],
         Area      = meta_i$Area[metadat_row],
@@ -279,11 +281,26 @@ head(alldat_matched)
 #saving matched data and metadata as raw data is too big (today, Licor files leave in the COMPASS drive)
 saveRDS(alldat_matched, file = "alldat_matched_2022.rds")
 
-#can remove any row that have NA's in the CH4 column 
+#can remove any row that have NA's in the CO2 column 
 #alldat <- alldat %>%
  # filter(!is.na(CO2))
 
 ```
+
+#Extracting initial CO2 concentration
+```{r}
+
+## Extract initial CO2 concentration (t0) for each Plot for QAQC later
+df_CO2_in <- alldat_matched %>%
+  arrange(Plot, TIMESTAMP) %>%
+  group_by(Plot) %>%
+  mutate(
+    CO2_initial = first(CO2)
+  ) %>% dplyr::select(CO2_initial,Plot)%>%
+  ungroup()
+
+```
+
 
 ## Reading matched data and metadata
 ```{r}
@@ -293,10 +310,83 @@ saveRDS(alldat_matched, file = "alldat_matched_2022.rds")
 alldat_matched <- readRDS("alldat_matched_2022.rds")
 ```
 
-## Temperature from weather station
+## Temperature from weather station in the wetland
 
 ```{r}
-# I need to go back here to get temp from the weather station
+
+# Getting Air temp from the weather station 
+## Read L2 temperature data from ZIP stored outside GitHub,
+## extract desired variable, save lightweight CSV,
+## and remove temporary unzipped files afterwards
+
+## Read extracted L2 Parquet files and save temperature time series
+BASE_DIR <- "D:/COMPASS_L2-v2-1/v2-1"   
+SITE     <- "(OWC|CRC|PTR)"             
+VARIABLE <- "wx-tempavg15"                  
+                                          
+OUTFILE  <- "Raw Data/L2_temp_timeseries.csv"
+
+# Build regex that matches REAL L2 filenames
+regex <- paste0(SITE, ".*", VARIABLE,".*_L2_v2-1.*\\.parquet$")
+
+# Locate Parquet files
+files <- list.files(BASE_DIR,pattern = regex,recursive = TRUE,full.names = TRUE)
+
+message("Files found: ", length(files))
+print(basename(files))
+
+# Fail fast if nothing is found
+stopifnot(length(files) > 0)
+
+# Read and combine Parquet files
+dat <- lapply(files, function(f) {
+  message("Reading ", basename(f))
+  read_parquet(f)
+})
+
+dat <- bind_rows(dat)
+
+# Optional QA filtering (only if column exists)
+if ("QA_flag" %in% names(dat)) {
+  dat <- dat %>% filter(QA_flag == 0)
+}
+
+# Keep only necessary columns
+temps <- dat %>%
+  select(TIMESTAMP, Plot, Site, Value) %>%
+  rename(Temp = Value)
+
+head(temps)
+
+# Save lightweight output only
+write.csv(
+  temps,
+  file = OUTFILE,
+  row.names = FALSE
+)
+
+#reading temp 
+temps <- read.csv("Raw Data/L2_temp_timeseries.csv")
+
+## Match up the L1 temp data and add it to the metadata dataframe
+#Going to need to use site and timestamp in the metadata in order to find a date 
+
+#make sure time stamps are in the correct format 
+alldat_matched$TIMESTAMP <- as.POSIXct(alldat_matched$TIMESTAMP, format = "%Y-%m-%d %H:%M:%OS")
+temps$TIMESTAMP <- as.POSIXct(temps$TIMESTAMP, format = "%Y-%m-%d %H:%M:%OS")
+
+#time rounding step 
+alldat_matched$DateTime_round <- round_date(alldat_matched$TIMESTAMP, "60 mins")
+temps$TIMESTAMP_round <- round_date(temps$TIMESTAMP, "60 mins")
+  
+#ensure there is only one data observation per hour 
+temps_clean <-   temps %>% 
+    group_by(TIMESTAMP_round, Site) %>%
+    summarize(Temp = mean(Temp )) 
+
+#join them 
+alldat_matched <- alldat_matched %>% 
+  left_join(temps_clean, by=c("Site"="Site", "DateTime_round"="TIMESTAMP_round"))
 ```
 
 ## fixing some Deadbands
@@ -344,7 +434,7 @@ alldat_matched <- alldat_matched %>%
 #change the units
 alldat_matched$CO2_umol <- ffi_ppm_to_umol(alldat_matched$CO2, 
                                 volume = alldat_matched$Volume, # m3
-                                temp = alldat_matched$Temp)    # degrees C
+                                temp = alldat_matched$Temp)    # degrees C from the weather station
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
@@ -356,6 +446,11 @@ fluxes <- ffi_compute_fluxes(alldat_matched ,
                              gas_column = "CO2_umol_m2", 
                              dead_band = 0)
 head(fluxes)
+
+
+#merging fluxes with initial CO2 concentration
+fluxes <- fluxes %>%
+  left_join(df_CO2_in,by = "Plot")
 
 #take a look at the fluxes we calculated with R2 
 ggplot(fluxes, aes(Plot, lin_flux.estimate, color = lin_r.squared)) +
