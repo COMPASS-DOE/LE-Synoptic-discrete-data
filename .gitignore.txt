@@ -1,0 +1,11 @@
+# Quarto / R Markdown render artifacts
+*_files/
+
+# Rendered outputs
+#*.html
+#*.pdf
+
+# R specific
+.Rhistory
+.RData
+.Rproj.user/

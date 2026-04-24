@@ -1,10 +1,12 @@
 ---
 title: "COMPASS_Synoptic_LE_Tree_CH4_Flux_Calcs_2022"
 author: "Roberta Peixoto"
-date: "`r Sys.Date()`"
-output: 
-  html_document:
-    self_contained: true 
+date: today
+format:
+  pdf:
+    toc: true
+    number-sections: true
+output-dir: "2022/PDF"
 ---
 
 ## Add Required Packages
@@ -14,13 +16,13 @@ lapply(c( "fluxfinder", "readxl",
   "dplyr", "ggplot2", "ggpubr", "stringr",
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
-  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr"), 
+  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "kableExtra"), 
   library, character.only = TRUE)
 ```
 
 ## Pull in Raw Datafiles
 
-```{r}
+```{#r}
 #defining where the raw data is
 
 DATA_DIR_ROOT <- here::here(
@@ -95,7 +97,7 @@ alldat<-alldat%>%filter(CH4>-1000)
 
 ## Read in metadata file and match to raw data
 
-```{r}
+```{#r}
 md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2022b.csv"
 dat <- read.csv(md)
 
@@ -108,8 +110,10 @@ metadat <- dat %>%
   mutate(
     Plot_raw = toupper(Plot),
     # Extract plot components 
-    Site = str_extract(Plot_raw, "^[A-Z]{3}"),
-    Zone = str_extract(Plot_raw, "(TR|UP)"),
+    #Site = str_extract(Plot_raw, "^[A-Z]{3}"),
+    #Zone = str_extract(Plot_raw, "(TR|UP)"), # somehow all of the UP PTR measurements turned into TR
+    Site = toupper(Site),
+    Zone = toupper(Zone), 
     Replicate = str_extract(Plot_raw, "(?<=TR|UP)[0-9]+"),
     # Letter ONLY if it comes AFTER a number
     Letter = str_extract(Plot_raw, "(?<=[0-9])[A-Z]$"),
@@ -142,7 +146,7 @@ head(metadat$Plot)
 
 ## Check start times overlapsor missing values
 
-```{r}
+```{#r}
 
 #checking if there is any start and stop time overlap from the field notes
 overlaps_detected <- metadat %>%
@@ -206,7 +210,7 @@ print(field_notes_overlap)
 
 ## Match metadata to raw data
 
-```{r}
+```{#r}
 #function to match data per equipment (considering different serial numbers) uhul!
 match_flux_metadata <- function(alldat, metadat) {
   message("Starting metadata ↔ Licor matching")
@@ -281,6 +285,15 @@ saveRDS(alldat_matched, file = "alldat_matched_2022.rds")
 
 ```
 
+## Reading matched data and metadata
+```{r}
+
+# after you match the data for the first time - we can just read the .rds file to save time hre
+
+alldat_matched <- readRDS("alldat_matched_2022.rds")
+```
+
+
 ## Temperature from weather station
 
 ```{r}
@@ -289,13 +302,16 @@ saveRDS(alldat_matched, file = "alldat_matched_2022.rds")
 
 ## fixing some Deadbands
 
-```{#r}
+```{r}
 # Table of plots with custom deadband adjustments
  deadband_overrides <- tibble::tibble(
-  Plot = c(),
-  DeadBand_override = c(
-  )
-)
+  Plot = c("10/21/2022_OWC_TR_121_56",
+           "8/17/2022_OWC_UP_7_148"
+           ),
+  DeadBand_override = c(120,
+                        120
+           )
+           )
 
 # Default deadband
 alldat_matched <- alldat_matched %>%
@@ -328,13 +344,13 @@ alldat_matched <- alldat_matched %>%
 
 # TO Do - NEED TO PULL TEMP from the weather station
 #change the units
-alldat_matched $CH4_nmol <- ffi_ppb_to_nmol(alldat_matched$CH4, 
+alldat_matched$CH4_nmol <- ffi_ppb_to_nmol(alldat_matched$CH4, 
                                 volume = alldat_matched$Volume, # m3
                                 temp = alldat_matched$Temp)    # degrees C
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_matched $CH4_nmol_m2 <- alldat_matched $CH4_nmol / 0.16
+alldat_matched$CH4_nmol_m2 <- alldat_matched$CH4_nmol / 0.16
 
 fluxes <- ffi_compute_fluxes(alldat_matched ,
                              group_column = "Plot", 
@@ -539,6 +555,35 @@ for(P in all_sample){
   }
 
 ####################
+```
+
+
+## Overall checks fo r2
+
+```{r}
+
+n_total <- nrow(fluxes_all)
+
+r2_summary <- fluxes_all %>%
+  mutate(
+    lin_bad   = lin_r.squared < 0.9 | is.na(lin_r.squared),
+    hm81_bad  = HM81_r.squared < 0.9 | is.na(HM81_r.squared),
+    poly_bad  = poly_r.squared < 0.9 | is.na(poly_r.squared),
+    fail_all_models = lin_bad & hm81_bad & poly_bad,
+    pass_at_least_one = !(fail_all_models)
+  ) %>%
+  summarise(
+    total_obs = n(),
+    n_lin_r2_below_0.9 = sum(lin_bad),
+    pct_lin_r2_below_0.9 = 100 * n_lin_r2_below_0.9 / total_obs,
+    n_fail_all_models = sum(fail_all_models),
+    pct_fail_all_models = 100 * n_fail_all_models / total_obs,
+    n_pass_at_least_one = sum(pass_at_least_one),
+    pct_pass_at_least_one = 100 * n_pass_at_least_one / total_obs
+  )
+
+r2_summary
+
 ```
 
 ## Remove any fluxes that do not fit criteria

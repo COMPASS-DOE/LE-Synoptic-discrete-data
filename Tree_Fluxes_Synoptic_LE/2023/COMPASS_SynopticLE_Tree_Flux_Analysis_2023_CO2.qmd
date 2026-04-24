@@ -1,10 +1,12 @@
 ---
-title: "COMPASS_Synoptic_LE_Tree_GHG_Flux_Calcs_2023"
+title: "COMPASS_Synoptic_LE_Tree_Flux_Calcs_2023_CO2"
 author: "Roberta Peixoto"
-date: "`r Sys.Date()`"
-output: 
-  html_document:
-    self_contained: true 
+date: today
+format:
+  pdf:
+    toc: true
+    number-sections: true
+output-dir: "2023/PDF"
 ---
 
 ## Add Required Packages
@@ -20,12 +22,12 @@ lapply(c( "fluxfinder", "readxl",
 
 ## Pull in Raw Datafiles
 
-```{r}
+```{#r}
 #defining where the raw data is
 
 DATA_DIR_ROOT <- here::here(
   "Tree_Fluxes_Synoptic_LE",
-  "2022",
+  "2023",
   "Raw Data"
 )
 
@@ -94,7 +96,7 @@ print(head(alldat))
 
 ## Read in metadata file and match to raw data
 
-```{r}
+```{#r}
 md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2023.csv"
 dat <- read.csv(md)
 
@@ -143,7 +145,7 @@ head(metadat$Plot)
 
 ## Check start times overlapsor missing values
 
-```{r}
+```{#r}
 
 #checking if there is any start and stop time overlap from the field notes
 overlaps_detected <- metadat %>%
@@ -207,7 +209,7 @@ print(field_notes_overlap)
 
 ## Match metadata to raw data
 
-```{r}
+```{#r}
 #function to match data per equipment (considering different serial numbers) uhul!
 match_flux_metadata <- function(alldat, metadat) {
   message("Starting metadata ↔ Licor matching")
@@ -282,6 +284,15 @@ saveRDS(alldat_matched, file = "alldat_matched_2023.rds")
  # filter(!is.na(CO2))
 
 ```
+
+##Reading matched data and metadata
+
+```{r}
+# after you match the data for the first time - we can just read the .rds file to save time here
+alldat_matched <- readRDS("alldat_matched_2023.rds")
+
+```
+
 
 ## Temperature from weather station
 
@@ -575,10 +586,7 @@ for(P in all_sample){
   #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
 
 allflux_filtered <- fluxes_all #%>%
-#   filter(!Plot %in% c("2022_09_23_PTR_TR_9_1", #leak 
-#                          "2022_07_07_PTR_TR_9_1", #leak
-#                          "2022_07_08_CRC_TR_36_1" #plateau + sharp increase - soil disturbed during measurement?
-#                       ))
+#   filter(!Plot %in% c(""))
 # 
 # 
 # # View the result
@@ -636,6 +644,38 @@ p3
 
 #ggarrange(p1, p2, p3, ncol=3, nrow=1, common.legend = TRUE, legend="none")
 ```
+
+## Overall checks fo r2
+
+```{r}
+
+n_total <- nrow(fluxes_all)
+
+r2_summary <- fluxes_all %>%
+  mutate(
+    lin_bad   = lin_r.squared < 0.9 | is.na(lin_r.squared),
+    hm81_bad  = HM81_r.squared < 0.9 | is.na(HM81_r.squared),
+    poly_bad  = poly_r.squared < 0.9 | is.na(poly_r.squared),
+    fail_all_models = lin_bad & hm81_bad & poly_bad,
+    pass_at_least_one = !(fail_all_models),
+    neg_CO2 = lin_flux.estimate < 0 | is.na(lin_flux.estimate)
+  ) %>%
+  summarise(
+    total_obs = n(),
+    n_lin_r2_below_0.9 = sum(lin_bad, na.rm = TRUE),
+    pct_lin_r2_below_0.9 = 100 * n_lin_r2_below_0.9 / total_obs,
+    n_fail_all_models = sum(fail_all_models, na.rm = TRUE),
+    pct_fail_all_models = 100 * n_fail_all_models / total_obs,
+    n_pass_at_least_one = sum(pass_at_least_one, na.rm = TRUE),
+    pct_pass_at_least_one = 100 * n_pass_at_least_one / total_obs,
+    n_neg_CO2 = sum(neg_CO2, na.rm = TRUE),
+    pct_neg_CO2 = 100 * n_neg_CO2 / total_obs
+  )
+
+r2_summary
+
+```
+
 
 ## Read out final dataframe and export for use elsewhere
 
