@@ -285,56 +285,162 @@ saveRDS(alldat_matched, file = "alldat_matched_2022.rds")
 
 ```
 
-## Reading matched data and metadata
+## reating alldata matched df
 ```{r}
 
-# after you match the data for the first time - we can just read the .rds file to save time hre
+# after you match the data for the first time - we can just read the .rds file to save processing time here
+# if you need to match licor data and metadata again, remove "#" from the previous chunks 
 
 alldat_matched <- readRDS("alldat_matched_2022.rds")
 ```
 
-
-## Temperature from weather station
-
+#Extracting initial CH4 concentration
 ```{r}
-# I need to go back here to get temp from the weather station
+
+## Extract initial CH4 concentration (t0) for each Plot for QAQC later
+#saving df to use after flux calculation
+df_CH4_in <- alldat_matched %>%
+  arrange(Plot, TIMESTAMP) %>%
+  group_by(Plot) %>%
+  summarise(CH4_initial = first(CH4), .groups = "drop")  
+
 ```
 
-## fixing some Deadbands
+## Creating temperature csv from the L2-weather station in the wetland
+
+```{#r}
+
+# Getting Air temp from the weather station 
+## Read L2 temperature data from ZIP stored outside GitHub,
+## extract desired variable, save lightweight CSV,
+## and remove temporary unzipped files afterwards
+
+## Read extracted L2 Parquet files and save temperature time series
+BASE_DIR <- "D:/COMPASS_L2-v2-1/v2-1"   
+SITE     <- "(OWC|CRC|PTR)"             
+VARIABLE <- "wx-tempavg15"                  
+                                          
+OUTFILE  <- "Raw Data/L2_temp_timeseries.csv"
+
+# Build regex that matches REAL L2 filenames
+regex <- paste0(SITE, ".*", VARIABLE,".*_L2_v2-1.*\\.parquet$")
+
+# Locate Parquet files
+files <- list.files(BASE_DIR,pattern = regex,recursive = TRUE,full.names = TRUE)
+
+message("Files found: ", length(files))
+print(basename(files))
+
+# Fail fast if nothing is found
+stopifnot(length(files) > 0)
+
+# Read and combine Parquet files
+dat <- lapply(files, function(f) {
+  message("Reading ", basename(f))
+  read_parquet(f)
+})
+
+dat <- bind_rows(dat)
+
+# Optional QA filtering (only if column exists)
+if ("QA_flag" %in% names(dat)) {
+  dat <- dat %>% filter(QA_flag == 0)
+}
+
+# Keep only necessary columns
+temps <- dat %>%
+  select(TIMESTAMP, Plot, Site, Value) %>%
+  rename(Temp = Value)
+
+head(temps)
+
+# Save lightweight output only
+write.csv(
+  temps,
+  file = OUTFILE,
+  row.names = FALSE
+)
+```
+
+## Reading Temp df to merge to metadat
+```{r}
+#reading temp 
+temps <- read.csv("Raw Data/L2_temp_timeseries.csv")
+
+## Match up the L1 temp data and add it to the metadata dataframe
+#Going to need to use site and timestamp in the metadata in order to find a date 
+
+#make sure time stamps are in the correct format 
+alldat_matched$TIMESTAMP <- as.POSIXct(alldat_matched$TIMESTAMP, format = "%Y-%m-%d %H:%M:%OS")
+#problem here L2 data for midnight is always "2022-01-01" we loose this line to NA when formatting TIMESTAMP - need to include hour first
+temps$TIMESTAMP[!grepl(":", temps$TIMESTAMP)] <- 
+  paste0(temps$TIMESTAMP[!grepl(":", temps$TIMESTAMP)], " 00:00:00")
+temps$TIMESTAMP <- as.POSIXct(temps$TIMESTAMP, format = "%Y-%m-%d %H:%M:%OS") 
+
+#time rounding step 
+alldat_matched$TIMESTAMP_round <- round_date(alldat_matched$TIMESTAMP, "60 mins")
+temps$TIMESTAMP_round <- round_date(temps$TIMESTAMP, "60 mins")
+  
+#ensure there is only one data observation per hour 
+temps_clean <-   temps %>% 
+    group_by(TIMESTAMP_round, Site) %>%
+    summarize(Temp = mean(Temp )) 
+
+#join them 
+alldat_matched <- alldat_matched %>% 
+  left_join(temps_clean, by=c("Site", "TIMESTAMP_round"))
+
+```
+
+
+## fixing some Deadbands and stop time
 
 ```{r}
+
+# need to include a way to adjust the stop time too
 # Table of plots with custom deadband adjustments
- deadband_overrides <- tibble::tibble(
-  Plot = c("10/21/2022_OWC_TR_121_56",
-           "8/17/2022_OWC_UP_7_148"
-           ),
-  DeadBand_override = c(120,
-                        120
-           )
-           )
+time_overrides <- tibble::tibble(
+            Plot = c("10/21/2022_OWC_TR_121_56",
+                       "8/17/2022_OWC_UP_7_148",
+                     "10/7/2022_PTR_TR_7_93",
+                     "10/4/2022_CRC_UP_306_68"
+                     ),
+  dead_band_manual = c(120,120,65,4),      
+  stop_offset_secs = c(0,0,0,0))
 
-# Default deadband
-alldat_matched <- alldat_matched %>%
+#apply new incubation period
+alldat_trimmed <- alldat_matched %>%
+  left_join(time_overrides, by = "Plot") %>%
+  group_by(Plot) %>%
   mutate(
-    DeadBand_used = as.numeric(Dead_band),
-    DeadBand_used = if_else(
-      is.na(DeadBand_used),
-      0,
-      DeadBand_used    )
-  )
-
-# # Apply per-plot overrides
-alldat_matched <- alldat_matched %>%
-  left_join(deadband_overrides, by = "Plot") %>%
-  mutate(
-    DeadBand_used = if_else(
-      !is.na(DeadBand_override),
-      DeadBand_override,
-      DeadBand_used
+    t_start_original = min(TIMESTAMP),
+    t_end_original   = max(TIMESTAMP),
+    
+    # deadband manual or metadat
+    t_start_adjusted = if_else(
+      !is.na(dead_band_manual),
+      t_start_original + dead_band_manual,
+      t_start_original + as.numeric(coalesce(first(Dead_band), 0))
+    ),
+    
+    # new offset 
+    t_end_adjusted = if_else(
+      !is.na(stop_offset_secs),
+      t_end_original + stop_offset_secs,
+      t_end_original
     )
   ) %>%
-  select(-DeadBand_override)
+  filter(TIMESTAMP >= t_start_adjusted,   
+         TIMESTAMP <= t_end_adjusted) %>% 
+  ungroup() %>%
+  select(-t_start_original, -t_end_original, 
+         -t_start_adjusted, -t_end_adjusted,
+         -dead_band_manual, -stop_offset_secs)
 
+# alldat_trimmed %>%
+#     filter(Plot == "8/17/2022_OWC_UP_6_147") %>%
+#     ggplot(aes(TIMESTAMP, CH4)) +
+#     geom_point() + theme_classic() 
 
 ```
 
@@ -344,20 +450,25 @@ alldat_matched <- alldat_matched %>%
 
 # TO Do - NEED TO PULL TEMP from the weather station
 #change the units
-alldat_matched$CH4_nmol <- ffi_ppb_to_nmol(alldat_matched$CH4, 
-                                volume = alldat_matched$Volume, # m3
-                                temp = alldat_matched$Temp)    # degrees C
+alldat_trimmed$CH4_nmol <- ffi_ppb_to_nmol(alldat_trimmed$CH4, 
+                                volume = alldat_trimmed$Volume, # m3
+                                temp = alldat_trimmed$Temp)    # degrees C
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_matched$CH4_nmol_m2 <- alldat_matched$CH4_nmol / 0.16
+alldat_trimmed$CH4_nmol_m2 <- alldat_trimmed$CH4_nmol / 0.16
 
-fluxes <- ffi_compute_fluxes(alldat_matched ,
+fluxes <- ffi_compute_fluxes(alldat_trimmed ,
                              group_column = "Plot", 
                              time_column = "TIMESTAMP", 
                              gas_column = "CH4_nmol_m2", 
                              dead_band = 0)
 head(fluxes)
+
+
+#merging fluxes with initial CH4 concentration
+fluxes <- fluxes %>%
+  left_join(df_CH4_in,by = "Plot")
 
 #take a look at the fluxes we calculated with R2 
 ggplot(fluxes, aes(Plot, lin_flux.estimate, color = lin_r.squared)) +
@@ -386,44 +497,45 @@ tails <- rbind(fluxes_low, fluxes_high)
 ## check the fluxes for which I changed the start time due to lags or high values (recorded in notes of metadata)
 
 ```{r}
-#### If something is in a V shape should we take the second part to make a positive linear curve?
+# grab trim limits for each overridden Plot
+trim_limits <- alldat_trimmed %>%
+  filter(Plot %in% time_overrides$Plot) %>%
+  group_by(Plot) %>%
+  summarise(
+    t_start_trim = min(TIMESTAMP),
+    t_end_trim   = max(TIMESTAMP) )
 
-# Subset data and create relative time (seconds since flux start)
-# r_all <- alldat %>%
-#   filter(Plot %in% deadband_overrides$Plot) %>%
-#   group_by(Plot) %>%
-#   mutate(
-#     time_sec = as.numeric(
-#       difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")
-#     )
-#   ) %>%
-#   ungroup()
-# 
-# 
-# # Random sample of plots for visualization
-# plots_sample <- sample(unique(r_all$Plot), 6,replace = FALSE)
-# 
-# r_plot <- r_all %>%
-#   filter(Plot %in% plots_sample)
-# 
-# # Plot
-# ggplot(
-#   r_plot,
-#   aes(
-#     x = TIMESTAMP,
-#     y = co2,
-#     color = time_sec >= DeadBand_used
-#   )
-# ) +
-#   geom_point(size = 1.8) +
-#   facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +
-#   scale_color_manual(
-#     values = c("grey60", "red"),
-#     labels = c("Discarded (deadband)", "Used after deadband")
-#   ) +
-#   theme_classic() +
-#   ylab(expression(paste(CO[2], " (ppm)"))) +
-#   xlab("Time")
+# use full alldat_matched + trim limits to classify each point
+r_all <- alldat_matched %>%
+  filter(Plot %in% time_overrides$Plot) %>%
+  left_join(trim_limits, by = "Plot") %>%
+  group_by(Plot) %>%
+  mutate(
+    time_sec = as.numeric(difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")),
+    point_status = case_when(
+      TIMESTAMP < t_start_trim ~ "Discarded (deadband)",
+      TIMESTAMP > t_end_trim   ~ "Discarded (stop trim)",
+      TRUE                     ~ "Used"  )) %>%
+  ungroup()
+
+# plot all overridden plots
+ggplot(r_all, aes(x = TIMESTAMP, y = CH4, color = point_status)) +
+  geom_point(size = 1.8) +
+  facet_wrap(~ Plot, scales = "free", ncol = 2) +
+  scale_color_manual(
+    values = c(
+      "Used"                  = "#E41A1C",
+      "Discarded (deadband)"  = "grey60",
+      "Discarded (stop trim)" = "grey20"
+    )
+  ) +
+  theme_classic() +
+  ylab(expression(paste(CH[4], " (ppb)"))) +
+  xlab("Time") +
+  labs(
+    title = "Incubation Period Adjustments",
+    color = "Point Status") +
+  theme(legend.position = "bottom")
 ```
 
 ## Spot check a few fluxes with R2 \> 0.9
@@ -439,7 +551,7 @@ good_sample <- sample(good_plots, 9, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in good_sample){ 
-  r1 <- subset(alldat_matched, Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), CH4)) + geom_point() + 
   scale_x_datetime(breaks = "15 sec") + 
   theme_classic() +
@@ -468,7 +580,7 @@ low_sample <- sample(low_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in low_sample){ 
-  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CH [4], " (ppb)"))) +
@@ -494,7 +606,7 @@ bad_sample <- sample(bad_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in bad_sample){ 
-  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CH [4], " (ppb)"))) +
@@ -518,7 +630,7 @@ tail_sample <- sample(tail_plots, 2, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in tail_sample){ 
-  r1 <- subset(alldat_matched , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CH4 [4], " (ppb)"))) +
@@ -535,7 +647,7 @@ for(P in tail_sample){
 
 ```{r}
 ##Put all fluxes together
-fluxes_all <- as.data.frame(subset(fluxes, select = Plot:TIMESTAMP_max))
+fluxes_all <- as.data.frame(subset(fluxes))
 
 all_plots <- unique(fluxes_all$Plot)
 
@@ -545,7 +657,7 @@ all_sample <- sample(all_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above
 for(P in all_sample){
-  r1 <- subset(alldat_matched, Plot== P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot== P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CH4)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") +
   ylab(expression(paste( CH [4], " (ppb)"))) +
@@ -558,58 +670,146 @@ for(P in all_sample){
 ```
 
 
-## Overall checks fo r2
+## QAQC flags
 
 ```{r}
 
-n_total <- nrow(fluxes_all)
-
-r2_summary <- fluxes_all %>%
+# QAQC flags
+fluxes_flagged <- fluxes %>%
   mutate(
-    lin_bad   = lin_r.squared < 0.9 | is.na(lin_r.squared),
-    hm81_bad  = HM81_r.squared < 0.9 | is.na(HM81_r.squared),
-    poly_bad  = poly_r.squared < 0.9 | is.na(poly_r.squared),
-    fail_all_models = lin_bad & hm81_bad & poly_bad,
-    pass_at_least_one = !(fail_all_models)
-  ) %>%
-  summarise(
-    total_obs = n(),
-    n_lin_r2_below_0.9 = sum(lin_bad),
-    pct_lin_r2_below_0.9 = 100 * n_lin_r2_below_0.9 / total_obs,
-    n_fail_all_models = sum(fail_all_models),
-    pct_fail_all_models = 100 * n_fail_all_models / total_obs,
-    n_pass_at_least_one = sum(pass_at_least_one),
-    pct_pass_at_least_one = 100 * n_pass_at_least_one / total_obs
+    # model fit flags
+    CH4_lin_pass  = (lin_r.squared  >= 0.85 | lin_RMSE  < 5) & !is.na(lin_r.squared),
+    CH4_HM81_pass = (HM81_r.squared >= 0.85 | HM81_RMSE < 5) & !is.na(HM81_r.squared),
+    CH4_poly_pass = (poly_r.squared >= 0.85 | poly_RMSE < 5) & !is.na(poly_r.squared),
+    # negative flux flag (CH4 negative fluxes may be valid, but flagging anyway)
+    CH4_neg_flux        = lin_flux.estimate < 0 | is.na(lin_flux.estimate),
+    # rejection flags
+    CH4_rejected_model  = !(CH4_lin_pass | CH4_HM81_pass | CH4_poly_pass)
   )
 
-r2_summary
+r2_summary <- fluxes_flagged %>%
+  summarise(
+    CH4_total_obs          = n(),
+    CH4_n_rejected_model   = sum(CH4_rejected_model,    na.rm = TRUE),
+    CH4_pct_rejected_total = 100 * CH4_n_rejected_model / CH4_total_obs,
+    CH4_n_lin_pass         = sum(CH4_lin_pass,  na.rm = TRUE),
+    CH4_n_HM81_pass        = sum(CH4_HM81_pass, na.rm = TRUE),
+    CH4_n_poly_pass        = sum(CH4_poly_pass, na.rm = TRUE)
+  )
+
+# formatted table for PDF
+r2_summary %>%
+  tidyr::pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+  mutate(
+    Metric = recode(Metric,
+      CH4_total_obs          = "Total observations",
+      CH4_n_rejected_model   = "Rejected — poor model fit (n)",
+      CH4_pct_rejected_total = "Rejected — total (%)",
+      CH4_n_lin_pass         = "Passed — Linear model (n)",
+      CH4_n_HM81_pass        = "Passed — HM81 model (n)",
+      CH4_n_poly_pass        = "Passed — Polynomial model (n)"
+    ),
+    Value = ifelse(Metric == "Rejected — total (%)",
+                   round(Value, 1),
+                   as.integer(Value))
+  ) %>%
+  kable(
+    caption  = "QA/QC CH4 Flux Summary",
+    align    = c("l", "r"),
+    booktabs = TRUE,
+    format   = "latex"
+  ) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position"),
+    full_width    = FALSE
+  ) %>%
+  pack_rows("Rejections",        2, 3) %>%
+  pack_rows("Model performance", 4, 6)
+
+# R² vs RMSE diagnostic plot
+set.seed(42)
+plot_data <- fluxes_flagged %>%
+  slice_sample(n = min(15000, nrow(.))) %>%
+  select(
+    lin_r.squared,  lin_RMSE,  CH4_lin_pass,
+    HM81_r.squared, HM81_RMSE, CH4_HM81_pass,
+    poly_r.squared, poly_RMSE, CH4_poly_pass
+  ) %>%
+  rename(
+    lin_pass  = CH4_lin_pass,
+    HM81_pass = CH4_HM81_pass,
+    poly_pass = CH4_poly_pass
+  ) %>%
+  pivot_longer(cols = everything(),
+    names_to      = c("model", ".value"),
+    names_pattern = "(lin|HM81|poly)_(.*)"
+  ) %>%
+  rename(r2 = r.squared) %>%
+  mutate(
+    model  = recode(model, lin = "Linear", HM81 = "HM81", poly = "Polynomial"),
+    status = case_when(
+      pass                 ~ "Accepted",
+      TRUE                 ~ "Rejected"
+    )
+  ) %>%
+  filter(!is.na(r2), !is.na(RMSE))
+
+QAQC_plot <- ggplot(plot_data, aes(x = r2, y = RMSE, color = model, shape = status)) +
+  geom_point(size = 2) +
+  geom_vline(xintercept = 0.85, linetype = "dashed", color = "black", linewidth = 0.8) +
+  geom_hline(yintercept = 5,    linetype = "dashed", color = "black", linewidth = 0.8) +
+  annotate("text", x = 0.7, y = max(plot_data$RMSE, na.rm = TRUE) * 0.95,
+           label = "R² = 0.85", hjust = -0.1, size = 3.5, fontface = "bold") +
+  annotate("text", x = 0.1, y = 5,
+           label = "RMSE = 5", vjust = -0.5, size = 3.5, fontface = "bold") +
+  scale_color_manual(values = c(
+    "Linear"     = "#E41A1C",
+    "HM81"       = "#377EB8",
+    "Polynomial" = "#4DAF4A"
+  )) +
+  scale_shape_manual(values = c(
+    "Accepted"     = 16,
+    "Rejected"     = 4
+  )) +
+  labs(
+    title = "R² vs RMSE — CH4 Flux QA/QC",
+    x     = "R²",
+    y     = "RMSE",
+    color = "Model",
+    shape = "Status"
+  ) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "right")
+
+print(QAQC_plot)
 
 ```
 
-## Remove any fluxes that do not fit criteria
+## Adding manual flag to reject any fluxes that do not fit criteria
 
-```{r}
+```{#r}
 
-# Create a new dataframe by removing rows that were present in fluxes_weird ???
-#allflux_filtered <- allflux[!(allflux$Plot %in% fluxes_weird$Plo), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad
+# adding manual flags to the ones that are crazy off based on visual checks
+manual_reject <- c() 
+ 
+fluxes_flagged <- fluxes_flagged %>%
+  mutate(
+    CH4_rejected_manual  = Plot %in% manual_reject,
+    CH4_flux_rejected   = CH4_rejected_model |CH4_rejected_manual)
 
-#Any others that are not in the weird category that need to be removed: 
-  #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
+# fluxes_flagged %>% 
+#   filter(CO2_rejected_manual) %>% 
+#   select(Plot, lin_r.squared, lin_RMSE, CH4_rejected_model, CH4_rejected_manual, CH4_flux_rejected)
 
-allflux_filtered <- fluxes_all #%>%
-#   filter(!Plot %in% c( disturbed during measurement?
-#                       ))
-# 
-# 
-# # View the result
-# head(allflux_filtered)
 ```
 
 ## Do some visualization of QAQC plots to assess fluxes
 
 ```{r}
 
-p1 <- ggplot(fluxes, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
+allflux_filtered <-fluxes_flagged%>%filter(!CH4_rejected_model) #CHANGE FOR CH4_flux_rejected  IF YOU FLAG ANY FLUX MANUALLY
+
+p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   labs(title = "A") + 
@@ -623,7 +823,7 @@ p1 <- ggplot(fluxes, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
         aspect.ratio = 1)
 p1
 
-p2 <- ggplot(fluxes, aes(lin_r.squared, poly_r.squared, color = Plot)) +
+p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   xlim(0,1) + ylim(0,1) +
@@ -638,7 +838,7 @@ p2 <- ggplot(fluxes, aes(lin_r.squared, poly_r.squared, color = Plot)) +
         aspect.ratio = 1)
 p2
 
-p3 <- ggplot(fluxes, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+p3 <- ggplot(allflux_filtered, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   #xlim(0,50) + #ylim(0,50) +
@@ -661,7 +861,7 @@ p3
 
 ```{r}
 
-allflux_filtered_renamed <- fluxes %>%
+allflux_filtered_renamed <- fluxes_flagged%>%
   mutate(
     Date = mdy(str_extract(Plot, "^[0-9]+/[0-9]+/[0-9]{4}")),
     Month = month.abb[month(Date)],
@@ -671,7 +871,7 @@ allflux_filtered_renamed <- fluxes %>%
     Replicate = as.integer(
       str_extract(Plot, "(?<=_(TR|UP)_)[0-9]+")
     ),
-   Plot_ID = as.integer(
+   Row_ID = as.integer(
       str_extract(Plot, "[0-9]+$")) ) %>%
   
   # Optional: rebuild a clean Plot label
@@ -681,7 +881,7 @@ allflux_filtered_renamed <- fluxes %>%
       Site,
       Zone,
       Replicate,
-      Plot_ID,
+      Row_ID,
       sep = "_"
     )
   ) %>%
@@ -693,7 +893,7 @@ allflux_filtered_renamed <- fluxes %>%
     Site,
     Zone,
     Replicate,
-    Plot_ID,
+    Row_ID,
     everything(),
     -Plot
   )
