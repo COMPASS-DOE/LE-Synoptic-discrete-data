@@ -297,7 +297,7 @@ alldat_matched <- readRDS("alldat_matched_2022.rds")
 ```
 
 
-#Extracting initial CO2 concentration
+##Extracting initial CO2 concentration
 ```{r}
 
 ## Extract initial CO2 concentration (t0) for each Plot for QAQC later
@@ -400,7 +400,6 @@ alldat_matched <- alldat_matched %>%
 
 ```{r}
 
-# need to include a way to adjust the stop time too
 # Table of plots with custom deadband adjustments
 time_overrides <- tibble::tibble(
   Plot             = c("8/17/2022_OWC_UP_6_147",

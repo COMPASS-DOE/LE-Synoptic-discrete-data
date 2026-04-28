@@ -397,7 +397,6 @@ alldat_matched <- alldat_matched %>%
 
 ```{r}
 
-# need to include a way to adjust the stop time too
 # Table of plots with custom deadband adjustments
 time_overrides <- tibble::tibble(
             Plot = c("10/21/2022_OWC_TR_121_56",

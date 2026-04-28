@@ -22,7 +22,7 @@ lapply(c( "fluxfinder", "readxl",
 
 ## Pull in Raw Datafiles
 
-```{r}
+```{#r}
 #defining where the raw data is
 
 DATA_DIR_ROOT <- here::here(
@@ -96,7 +96,7 @@ print(head(alldat))
 
 ## Read in metadata file and match to raw data
 
-```{r}
+```{#r}
 md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2023.csv"
 dat <- read.csv(md)
 
@@ -145,7 +145,7 @@ head(metadat$Plot)
 
 ## Check start times overlapsor missing values
 
-```{r}
+```{#r}
 
 #checking if there is any start and stop time overlap from the field notes
 overlaps_detected <- metadat %>%
@@ -209,7 +209,7 @@ print(field_notes_overlap)
 
 ## Match metadata to raw data
 
-```{r}
+```{#r}
 #function to match data per equipment (considering different serial numbers) uhul!
 match_flux_metadata <- function(alldat, metadat) {
   message("Starting metadata ↔ Licor matching")
@@ -394,25 +394,23 @@ alldat_matched <- alldat_matched %>%
 
 ```
 
-## fixing some Deadbands
+## fixing some Deadbands and stop time
 
-```{r}
+```{#r}
 
-# need to include a way to adjust the stop time too
-# Table of plots with custom deadband adjustments
+# Table of plots with custom deadband and stop time adjustments
 time_overrides <- tibble::tibble(
-  Plot             = c("7/13/2023CRC_TR315-115",
-                      "7/27/2023PTR_UP8-125",
-                      "7/13/2023CRC_TR315-115",
-                      "3/28/2023OWC_TR127-170",
-                      "5/10/2023OWC_UP103-73",
-                      "7/13/2023CRC_TR314-114",
-                      "8/3/2023CRC_TR314-133",
-                      "7/13/2023CRC_TR316-116",
-                      "6/29/2023CRC_TR311-104"
+  Plot             = c("7/13/2023_CRC_TR_315_115",
+                      "7/27/2023_PTR_UP_8_125",
+                      "3/28/2023_OWC_TR_127_170",
+                      "5/10/2023_OWC_UP_103_73",
+                      "7/13/2023_CRC_TR_314_114",
+                      "8/3/2023_CRC_TR_314_133",
+                      "7/13/2023_CRC_TR_316_116",
+                      "6/29/2023_CRC_TR_311_104"
                        ),
-  dead_band_manual = c(8,9,22,22,16,8,16,3,34),      
-  stop_offset_secs = c(0,0,0,0,0,0,0,0,0))
+  dead_band_manual = c(8,9,22,16,8,16,3,34),      
+  stop_offset_secs = NA_real_)
 
 #apply new incubation period
 alldat_trimmed <- alldat_matched %>%
@@ -424,10 +422,10 @@ alldat_trimmed <- alldat_matched %>%
     
     # deadband manual or metadat
     t_start_adjusted = if_else(
-      !is.na(dead_band_manual),
-      t_start_original + dead_band_manual,
-      t_start_original + as.numeric(coalesce(first(Dead_band), 0))
-    ),
+  !is.na(dead_band_manual),
+  t_start_original + dead_band_manual,
+  t_start_original
+),
     
     # new offset 
     t_end_adjusted = if_else(
@@ -455,15 +453,15 @@ alldat_trimmed <- alldat_matched %>%
 ```{r}
 
 #change the units
-alldat_trimmed$CO2_umol <- ffi_ppm_to_umol(alldat_trimmed$CO2, 
-                                volume = alldat_trimmed$Volume, # m3
-                                temp = alldat_trimmed$Temp)    # degrees C from the weather station
+alldat_matched$CO2_umol <- ffi_ppm_to_umol(alldat_matched$CO2, 
+                                volume = alldat_matched$Volume, # m3
+                                temp = alldat_matched$Temp)    # degrees C from the weather station
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_trimmed$CO2_umol_m2 <- alldat_trimmed$CO2_umol / 0.16
+alldat_matched$CO2_umol_m2 <- alldat_matched$CO2_umol / alldat_matched$Area
 
-fluxes <- ffi_compute_fluxes(alldat_trimmed ,
+fluxes <- ffi_compute_fluxes(alldat_matched ,
                              group_column = "Plot", 
                              time_column = "TIMESTAMP", 
                              gas_column = "CO2_umol_m2", 
