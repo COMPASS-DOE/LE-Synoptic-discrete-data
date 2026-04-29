@@ -1,5 +1,5 @@
 ---
-title: "COMPASS_Synoptic_LE_Tree_Flux_Calcs_2023_CO2"
+title: "COMPASS_Synoptic_LE_Tree_CO2_Flux_Calcs_2023b"
 author: "Roberta Peixoto"
 date: today
 format:
@@ -16,7 +16,7 @@ lapply(c( "fluxfinder", "readxl",
   "dplyr", "ggplot2", "ggpubr", "stringr",
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
-  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr"), 
+  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "kableExtra", "arrow"), 
   library, character.only = TRUE)
 ```
 
@@ -32,7 +32,7 @@ DATA_DIR_ROOT <- here::here(
 )
 
 
-#fucntion to read data
+#function to read data
 now <- function() format(Sys.time(), "%Y-%m-%d %H:%M:%S")
 message(now(), " | Script started")
 #finding the zip files
@@ -91,7 +91,8 @@ message("Final number of rows: ", nrow(alldat))
 # Show result
 print(head(alldat))
 
-
+#REMOVING WEIRD VERY LOW VALUES ON "2022-12-20 11:41:00" co2=-4000 licor bug???
+alldat<-alldat%>%filter(CO2>-1000)
 ```
 
 ## Read in metadata file and match to raw data
@@ -110,7 +111,7 @@ metadat <- dat %>%
     Plot_raw = toupper(Plot),
     # Extract plot components 
     #Site = str_extract(Plot_raw, "^[A-Z]{3}"),
-    #Zone = str_extract(Plot_raw, "(TR|UP)"), # somehow all of the PTR measurements turned into TR
+    #Zone = str_extract(Plot_raw, "(TR|UP)"), # somehow all of the UP PTR measurements turned into TR
     Site = toupper(Site),
     Zone = toupper(Zone), 
     Replicate = str_extract(Plot_raw, "(?<=TR|UP)[0-9]+"),
@@ -280,23 +281,23 @@ head(alldat_matched)
 #saving matched data and metadata as raw data is too big (today, Licor files leave in the COMPASS drive)
 saveRDS(alldat_matched, file = "alldat_matched_2023.rds")
 
-
 #can remove any row that have NA's in the CO2 column 
 #alldat <- alldat %>%
  # filter(!is.na(CO2))
 
 ```
 
-##Reading matched data and metadata
-
+## reating alldata matched df
 ```{r}
-# after you match the data for the first time - we can just read the .rds file to save time here
-alldat_matched <- readRDS("alldat_matched_2023.rds")
 
+# after you match the data for the first time - we can just read the .rds file to save processing time here
+# if you need to match licor data and metadata again, remove "#" from the previous chunks 
+
+alldat_matched <- readRDS("alldat_matched_2023.rds")
 ```
 
 
-#Extracting initial CO2 concentration
+##Extracting initial CO2 concentration
 ```{r}
 
 ## Extract initial CO2 concentration (t0) for each Plot for QAQC later
@@ -364,53 +365,111 @@ write.csv(
 )
 ```
 
+
 ## Reading Temp df to merge to metadat
 ```{r}
-#reading temp 
+# reading temp 
 temps <- read.csv("Raw Data/L2_temp_timeseries.csv")
 
-## Match up the L1 temp data and add it to the metadata dataframe
-#Going to need to use site and timestamp in the metadata in order to find a date 
+# make sure timestamps are in the correct format
+# convert to tibble early to avoid data.table list-column issues
+alldat_matched <- as_tibble(alldat_matched) %>%
+  mutate(across(where(is.list), ~ as.numeric(unlist(.))))
 
-#make sure time stamps are in the correct format 
 alldat_matched$TIMESTAMP <- as.POSIXct(alldat_matched$TIMESTAMP, format = "%Y-%m-%d %H:%M:%OS")
-#problem here L2 data for midnight is always "2022-01-01" we loose this line to NA when formatting TIMESTAMP - need to include hour first
+alldat_matched$Dead_band <- as.numeric(alldat_matched$Dead_band)
+
+# fix midnight timestamps in L2 data
 temps$TIMESTAMP[!grepl(":", temps$TIMESTAMP)] <- 
   paste0(temps$TIMESTAMP[!grepl(":", temps$TIMESTAMP)], " 00:00:00")
 temps$TIMESTAMP <- as.POSIXct(temps$TIMESTAMP, format = "%Y-%m-%d %H:%M:%OS") 
 
-#time rounding step 
+# time rounding
 alldat_matched$TIMESTAMP_round <- round_date(alldat_matched$TIMESTAMP, "60 mins")
-temps$TIMESTAMP_round <- round_date(temps$TIMESTAMP, "60 mins")
-  
-#ensure there is only one data observation per hour 
-temps_clean <-   temps %>% 
-    group_by(TIMESTAMP_round, Site) %>%
-    summarize(Temp = mean(Temp )) 
+temps$TIMESTAMP_round           <- round_date(temps$TIMESTAMP, "60 mins")
 
-#join them 
+# one observation per hour
+temps_clean <- temps %>% 
+  group_by(TIMESTAMP_round, Site) %>%
+  summarize(Temp = mean(Temp), .groups = "drop") 
+
+# join weather station temp
 alldat_matched <- alldat_matched %>% 
-  left_join(temps_clean, by=c("Site", "TIMESTAMP_round"))
+  left_join(temps_clean, by = c("Site", "TIMESTAMP_round"))
 
+# ── DIAGNOSTIC: which plots are missing Temp after join ──────────────────────
+temp_missing_check <- alldat_matched %>%
+  group_by(Plot, Site) %>%
+  summarise(
+    n_obs       = n(),
+    n_temp_na   = sum(is.na(Temp)),
+    pct_temp_na = round(100 * n_temp_na / n_obs, 1),
+    month       = month(first(TIMESTAMP)),
+    .groups     = "drop"
+  ) %>%
+  filter(n_temp_na > 0)
+
+message("Plots with missing Temp: ", nrow(temp_missing_check))
+print(temp_missing_check)
+
+# ── IMPUTATION: monthly mean per site as fallback ────────────────────────────
+monthly_temp <- alldat_matched %>%
+  mutate(month = month(TIMESTAMP)) %>%
+  filter(!is.na(Temp)) %>%
+  group_by(Site, month) %>%
+  summarise(Temp_monthly_mean = mean(Temp), .groups = "drop")
+
+alldat_matched <- alldat_matched %>%
+  mutate(
+    month      = month(TIMESTAMP),
+    Temp       = as.numeric(Temp)
+  ) %>%
+  left_join(monthly_temp, by = c("Site", "month")) %>%
+  mutate(
+    Temp_source = case_when(
+      !is.na(Temp)              ~ "weather_station",
+      !is.na(Temp_monthly_mean) ~ "monthly_mean_imputed",
+      TRUE                      ~ "still_missing"
+    ),
+    Temp = coalesce(Temp, Temp_monthly_mean)
+  ) %>%
+  select(-Temp_monthly_mean, -month)
+
+# ── FINAL CHECK ──────────────────────────────────────────────────────────────
+message("Temp source summary:")
+alldat_matched$Temp_source <- as.character(alldat_matched$Temp_source)
+table(alldat_matched$Temp_source)
+
+still_missing <- alldat_matched %>%
+  filter(Temp_source == "still_missing") %>%
+  distinct(Plot, Site)
+
+if (nrow(still_missing) > 0) {
+  message("WARNING: ", nrow(still_missing), " plots still have no Temp after imputation:")
+  print(still_missing)
+} else {
+  message("All plots have Temp after imputation.")
+}
 ```
 
 ## fixing some Deadbands and stop time
 
-```{#r}
+```{r}
 
-# Table of plots with custom deadband and stop time adjustments
+# Table of plots with custom deadband adjustments
 time_overrides <- tibble::tibble(
-  Plot             = c("7/13/2023_CRC_TR_315_115",
-                      "7/27/2023_PTR_UP_8_125",
-                      "3/28/2023_OWC_TR_127_170",
-                      "5/10/2023_OWC_UP_103_73",
-                      "7/13/2023_CRC_TR_314_114",
-                      "8/3/2023_CRC_TR_314_133",
-                      "7/13/2023_CRC_TR_316_116",
-                      "6/29/2023_CRC_TR_311_104"
-                       ),
-  dead_band_manual = c(8,9,22,16,8,16,3,34),      
-  stop_offset_secs = NA_real_)
+  Plot             = c(#"7/13/2023_CRC_TR_315_115",
+                      #"7/27/2023_PTR_UP_8_125",
+                      #"3/28/2023_OWC_TR_127_170",
+                      #"5/10/2023_OWC_UP_103_73",
+                      #"7/13/2023_CRC_TR_314_114",
+                      #"8/3/2023_CRC_TR_314_133",
+                      #"7/13/2023_CRC_TR_316_116",
+                      #"6/29/2023_CRC_TR_311_104" ,
+                      "2/24/2023_PTR_UP_4_100"),
+  dead_band_manual = c(#8,9,22,16,8,16,3,34,
+                      22),
+  stop_offset_secs = NA_real_ )
 
 #apply new incubation period
 alldat_trimmed <- alldat_matched %>%
@@ -419,25 +478,25 @@ alldat_trimmed <- alldat_matched %>%
   mutate(
     t_start_original = min(TIMESTAMP),
     t_end_original   = max(TIMESTAMP),
-    
+
     # deadband manual or metadat
     t_start_adjusted = if_else(
-  !is.na(dead_band_manual),
-  t_start_original + dead_band_manual,
-  t_start_original
-),
-    
-    # new offset 
+      !is.na(dead_band_manual),
+      t_start_original + dead_band_manual,
+      t_start_original + as.numeric(coalesce(first(Dead_band), 0))
+    ),
+
+    # new offset
     t_end_adjusted = if_else(
       !is.na(stop_offset_secs),
       t_end_original + stop_offset_secs,
       t_end_original
     )
   ) %>%
-  filter(TIMESTAMP >= t_start_adjusted,   
-         TIMESTAMP <= t_end_adjusted) %>% 
+  filter(TIMESTAMP >= t_start_adjusted,
+         TIMESTAMP <= t_end_adjusted) %>%
   ungroup() %>%
-  select(-t_start_original, -t_end_original, 
+  select(-t_start_original, -t_end_original,
          -t_start_adjusted, -t_end_adjusted,
          -dead_band_manual, -stop_offset_secs)
 
@@ -453,15 +512,15 @@ alldat_trimmed <- alldat_matched %>%
 ```{r}
 
 #change the units
-alldat_matched$CO2_umol <- ffi_ppm_to_umol(alldat_matched$CO2, 
-                                volume = alldat_matched$Volume, # m3
-                                temp = alldat_matched$Temp)    # degrees C from the weather station
+alldat_trimmed$CO2_umol <- ffi_ppm_to_umol(alldat_trimmed$CO2, 
+                                volume = alldat_trimmed$Volume, # m3
+                                temp = alldat_trimmed$Temp)    # degrees C from the weather station
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_matched$CO2_umol_m2 <- alldat_matched$CO2_umol / alldat_matched$Area
+alldat_trimmed$CO2_umol_m2 <- alldat_trimmed$CO2_umol / 0.16
 
-fluxes <- ffi_compute_fluxes(alldat_matched ,
+fluxes <- ffi_compute_fluxes(alldat_trimmed ,
                              group_column = "Plot", 
                              time_column = "TIMESTAMP", 
                              gas_column = "CO2_umol_m2", 
@@ -609,10 +668,10 @@ bad_sample <- sample(bad_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in bad_sample){ 
-  r1 <- subset(alldat_trimmed , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CO2)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
-  ylab(expression(paste( CO [2], " (ppm)"))) +
+  ylab(expression(paste( CO[2], " (ppm)"))) +
   xlab("Time") + labs(title = P) +
   geom_smooth()
   print(p1)
@@ -633,7 +692,7 @@ tail_sample <- sample(tail_plots, 2, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in tail_sample){ 
-  r1 <- subset(alldat_trimmed , Plot == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CO2)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -650,9 +709,9 @@ for(P in tail_sample){
 
 ```{r}
 ##Put all fluxes together
-fluxes_all <- as.data.frame(subset(fluxes, select = Plot:TIMESTAMP_max))
+#fluxes_all <- as.data.frame(subset(fluxes, select = Plot:TIMESTAMP_max))
 
-all_plots <- unique(fluxes_all$Plot)
+all_plots <- unique(fluxes$Plot)
 
 # take a random sample (FALSE so we don't get the same plot twice)
 # set.seed(...) to guarantee reproducibility
@@ -660,7 +719,7 @@ all_sample <- sample(all_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above
 for(P in all_sample){
-  r1 <- subset(alldat_trimmed , Plot== P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot== P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, CO2)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") +
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -671,6 +730,7 @@ for(P in all_sample){
 
 ####################
 ```
+
 
 ## QAQC - Flags
 
@@ -802,11 +862,8 @@ print(QAQC_plot)
 ```{r}
 
 # adding manual flags to the ones that are crazy off based on visual checks
-manual_reject <- c(
-  "8/17/2022_OWC_UP_7_148",
-  "8/17/2022_OWC_UP_6_147",
-  "11/4/2022_OWC_TR_123_43"
-) 
+manual_reject <- c("2/24/2023_PTR_UP_6_101"  #leak
+  ) 
  
 fluxes_flagged <- fluxes_flagged %>%
   mutate(
@@ -818,18 +875,20 @@ fluxes_flagged <- fluxes_flagged %>%
 #   select(Plot, lin_r.squared, lin_RMSE, CO2_rejected_model, CO2_rejected_negCO2, CO2_rejected_manual, CO2_flux_rejected)
 
 ```
+
 ## Do some visualization of QAQC plots to assess fluxes
 
 ```{r}
 
 allflux_filtered <-fluxes_flagged%>%filter(!CO2_flux_rejected)
 
-p1 <- ggplot(allflux_filtered , aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
+
+p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color = Plot)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   labs(title = "A") + 
-  ylab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") Robust Method"))) +
-  xlab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") Linear Method"))) +
+  ylab(expression(paste( CO [2], " Flux (Umol m"^-2* " s"^-1*") Robust Method"))) +
+  xlab(expression(paste( CO [2], " Flux (Umol m"^-2* " s"^-1*") Linear Method"))) +
   guides(color = guide_legend(title = "Plot")) +
   theme(legend.position="none") +
   theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
@@ -838,7 +897,7 @@ p1 <- ggplot(allflux_filtered , aes(lin_flux.estimate, rob_flux.estimate, color 
         aspect.ratio = 1)
 p1
 
-p2 <- ggplot(allflux_filtered , aes(lin_r.squared, poly_r.squared, color = Plot)) +
+p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   xlim(0,1) + ylim(0,1) +
@@ -853,13 +912,13 @@ p2 <- ggplot(allflux_filtered , aes(lin_r.squared, poly_r.squared, color = Plot)
         aspect.ratio = 1)
 p2
 
-p3 <- ggplot(allflux_filtered , aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+p3 <- ggplot(allflux_filtered, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   #xlim(0,50) + #ylim(0,50) +
   labs(title = "C") + 
-  ylab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") HM1981 Method"))) +
-  xlab(expression(paste( CO [2], " Flux (umol m"^-2* " s"^-1*") Linear Method"))) +
+  ylab(expression(paste( CO [2], " Flux (Umol m"^-2* " s"^-1*") HM1981 Method"))) +
+  xlab(expression(paste( CO [2], " Flux (Umol m"^-2* " s"^-1*") Linear Method"))) +
   guides(color = guide_legend(title = "Plot_ID")) + 
   theme(legend.position="right") +
   theme(axis.title.x = element_text(size=12), axis.text = element_text(size=12),
@@ -875,8 +934,6 @@ p3
 ## Read out final dataframe and export for use elsewhere
 
 ```{r}
-
-## Read out final dataframe and export for use elsewhere
 
 allflux_filtered_renamed <- fluxes_flagged %>%
   mutate(
@@ -914,6 +971,8 @@ allflux_filtered_renamed <- fluxes_flagged %>%
     everything(),
     -Plot
   )
+
+
 
 
 #export as a csv to the folder that you want
