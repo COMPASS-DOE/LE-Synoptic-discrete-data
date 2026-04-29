@@ -59,15 +59,49 @@ stem_flux_2022_2023 <- bind_rows( df_2022,df_2023)
 #   filter(!grepl("remove", co2_qaqc_flag, ignore.case = TRUE)) 
 
 ##Removed fluxes in the CH4 and CO2 flux processing Rmd code, removed both CH4 and CO2 obs when CO2 fluxes were negative and when visual checks showed weird bumps and chamber leak. 
-r2_summary <- stem_flux_2022_2023 %>%
-                      mutate(neg_CO2 = co2_lin_flux.estimate < 0 | is.na(co2_lin_flux.estimate) ) %>%  
+r2_summary <- stem_flux_2022_2023 %>% 
                       summarise(total_obs = n(),
-                                n_neg_CO2 = sum(neg_CO2, na.rm = TRUE),
-                                pct_neg_CO2 = 100 * n_neg_CO2 / total_obs)
+                                n_neg_CO2 = sum(CO2_neg_flux , na.rm = TRUE),
+                                pct_neg_CO2 = 100 * n_neg_CO2 / total_obs,
 
-r2_summary
+                                n_CO2_flux_rejected = sum(CO2_flux_rejected),
+                                pct_CO2_flux_rejected = 100 * n_CO2_flux_rejected / total_obs,
 
-stem_flux_2022_2023 <-stem_flux_2022_2023%>%
+                                n_CH4_rejected_model = sum(CH4_rejected_model),
+                                pct_CH4_rejected_model = 100 * n_CH4_rejected_model / total_obs)
+
+#table
+r2_summary %>%
+  tidyr::pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+  mutate(
+    Metric = recode(Metric,
+      total_obs              = "Total observations",
+      n_neg_CO2              = "Negative CO2 flux (n)",
+      pct_neg_CO2            = "Negative CO2 flux (%)",
+      n_CO2_flux_rejected    = "Rejected CO2 flux (n)",
+      pct_CO2_flux_rejected  = "Rejected CO2 flux (%)",
+      n_CH4_rejected_model   = "Rejected CH4 — poor model fit (n)",
+      pct_CH4_rejected_model = "Rejected CH4 — poor model fit (%)"
+    ),
+    Value = ifelse(grepl("%", Metric),
+                   round(Value, 1),
+                   as.integer(Value))
+  ) %>%
+  knitr::kable(
+    caption  = "QA/QC CO2 and CH4 Flux Summary",
+    align    = c("l", "r"),
+    booktabs = TRUE,
+    format   = "latex"
+  ) %>%
+  kableExtra::kable_styling(
+    latex_options = c("striped", "hold_position"),
+    full_width    = FALSE
+  ) %>%
+  kableExtra::pack_rows("CO2", 2, 5) %>%
+  kableExtra::pack_rows("CH4", 6, 7)
+
+#removing negative CO2 fluxes from the final dataset but leaving flags for users to decide
+stem_flux_2022_2023_filtered <-stem_flux_2022_2023%>%
                       filter(co2_lin_flux.estimate>0)
 
 ##note that this list has some not synoptic monitoring samples zone-labeled as "Luci" that were taken during Lucie Stetten fieldwork for her incubation
@@ -81,7 +115,7 @@ stem_flux_2022_2023 <-stem_flux_2022_2023%>%
 ```{r write out combined data and metadata, include=FALSE}
 
 #write out a csv of all the data to the main folder: 
-write.csv(stem_flux_2022_2023, "COMPASS_Synoptic_LE_Tree_Fluxes_all_data_2022_2023.csv", row.names = FALSE)
+write.csv(stem_flux_2022_2023_filtered, "COMPASS_Synoptic_LE_Tree_Fluxes_all_data_2022_2023.csv", row.names = FALSE)
 
 ```
 
@@ -89,7 +123,7 @@ write.csv(stem_flux_2022_2023, "COMPASS_Synoptic_LE_Tree_Fluxes_all_data_2022_20
 
 ```{r Visualize Data, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 300}
 
-data_plotting <- stem_flux_2022_2023
+data_plotting <- stem_flux_2022_2023_filtered
 
 #Order by Zone from Upland to Surface Water
 data_plotting$Zone = factor(data_plotting$Zone, levels = c("UP", "TR"))
@@ -215,7 +249,7 @@ viz_co2_boxplot
 
 ```{r Overall Boxplot, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 300}
 
-##Summarize NPOC by Date, Site, and Zone
+##Summarize flux by Date, Site, and Zone
 viz_ch4_summary_boxplot <- ggplot(data_plotting_all, aes(x = Zone_1, y = ch4_lin_flux.estimate, fill = Zone_1)) +
   geom_boxplot() + 
   facet_wrap( ~ Site, scales = "free", nrow = 1) +
@@ -237,7 +271,7 @@ viz_ch4_summary_boxplot <- ggplot(data_plotting_all, aes(x = Zone_1, y = ch4_lin
 viz_ch4_summary_boxplot
 
 
-##Summarize TDN by Date, Site, and Zone
+##Summarize flux by Date, Site, and Zone
 viz_co2_summary_boxplot <- ggplot(data_plotting_all, aes(x = Zone_1, y = co2_lin_flux.estimate, fill = Zone_1)) +
   geom_boxplot() + 
   facet_wrap( ~ Site, scales = "free", nrow = 1) +
@@ -285,7 +319,7 @@ summary <- data_plotting_all %>%
 ```{r Summary table metrics, echo = FALSE, message = FALSE, dpi = 100}
 
 
-kable(
+knitr::kable(
   summary[, c("Site", "Zone_1", "min_ch4", "max_ch4", "mean_ch4",
               "min_co2", "max_co2", "mean_co2")],  
   format = "latex",
@@ -297,7 +331,7 @@ kable(
   booktabs = TRUE,
   caption = "Summary Statistics by Site and Zone"
 ) %>%
-  kable_styling(
+  kableExtra::kable_styling(
     latex_options = c("hold_position", "striped", "scale_down"),
     font_size = 12
   ) %>%
