@@ -11,3 +11,4 @@ QAQC flags criteria based on the CO2 flux behave:
     2-Observations with r2<0.85 and high variability (near zero/no flux not excluded)
     3-Visual checks for concentration drops (leak) during measurements 
 
+The raw data from Licors used here lives in the COMPASS drive https://drive.google.com/drive/folders/1KzrYY9A8LaETv0k8q7GtdMGMT7CS-u3i 
