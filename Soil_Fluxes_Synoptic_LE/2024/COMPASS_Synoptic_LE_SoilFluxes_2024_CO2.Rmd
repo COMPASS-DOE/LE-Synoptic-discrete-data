@@ -1,10 +1,12 @@
 ---
-title: "COMPASS_Synoptic_LE_SoilFluxes_2023_CO2"
+title: "COMPASS_Synoptic_LE_SoilFluxes_2024_CO2"
 author: "Roberta Peixoto "
-date: "2026-04-02"
-output: 
-  html_document:
-    self_contained: true
+date: today
+format:
+  pdf:
+    toc: true
+    number-sections: true
+output-dir: "2024/PDF"
 ---
 ## Goals of this code: 
 1.	Reads in raw smart chamber
@@ -40,202 +42,156 @@ library(dplyr)
 library(tidyr)
 library(tidyverse)
 library(stringr)
+library(kableExtra)
 
 ```
 
 ## Pull in Smart Chamber Files from the Raw Data folder
-```{r, message=FALSE, warning = FALSE, results ='hide'}
+```{r, message=FALSE, warning = FALSE, results ='hide', echo=FALSE}
 
 # Create a temporary directory
 tmp_dir <- tempdir()
 
-# Get list of files inside the zip
-zip_contents <- unzip("Raw Data_LE_2023.zip", list = TRUE)
+# Path to the zip file
+zip_file <- "D:/GitHub/LE-Synoptic-discrete-data/Soil_Fluxes_Synoptic_LE/2024/Raw Data_LE_2024.zip"
 
-# Keep only JSON files
-json_files <- zip_contents$Name[grepl("json$", zip_contents$Name, ignore.case = TRUE)]
+# List files inside the zip
+zip_contents <- unzip(zip_file, list = TRUE)
 
-# Extract only the JSON files
-unzip(
-  "Raw Data_LE_2023.zip",
-  files = json_files,
-  exdir = tmp_dir
-)
+# Select SmartChamber files (json, txt, data)
+raw_files <- zip_contents$Name[ grepl("\\.(json|txt|data)$", zip_contents$Name, ignore.case = TRUE) &
+  !grepl("manifest|test|generic", zip_contents$Name, ignore.case = TRUE)]
 
-# List extracted JSON files (full paths)
+# Extract selected files
+unzip(zip_file,
+  files = raw_files,
+  exdir = tmp_dir)
+
+# List extracted files (REAL paths on disk)
 file.list <- list.files(
   path = tmp_dir,
-  pattern = "json$",
+  pattern = "\\.(json|txt|data)$",
   full.names = TRUE,
-  recursive = TRUE
-)
+  recursive = TRUE)
 
-head(file.list)
+# Read ALL SmartChamber files (json, txt, data)
+alldat1 <- lapply(file.list, function(f) {
+  tryCatch(
+    ffi_read_LIsmartchamber(f),
+    error = function(e) {
+      message("Skipped file: ", basename(f))
+      NULL} )})
 
-# Read in the data
-alldat1 <- lapply(file.list, ffi_read_LIsmartchamber)
+# Keep only successful reads with data
+alldat1 <- alldat1[
+  sapply(alldat1, function(x) !is.null(x) && nrow(x) > 0)]
 
-
-# Combine into one data.table
+# Combine into a single table
 alldat <- data.table::rbindlist(alldat1, fill = TRUE)
-
-
-## Noticed that some site names were recorded in the file name and not in the flux label for 2023 
-## dealing with it in the next chunk 
-
-
-
+  
 ```
 
-## Unfortunatly - we had many problems with labels - we need to include the sites in the Plot_ID
-```{r}
-# Table describing the days we have visited each site
-site_lookup <- tibble::tribble(
-  ~Date,         ~Site,
-  "2023-01-20",  "CRC",
-  "2023-02-21",  "CRC",
-  "2023-03-24",  "CRC",
-  "2023-04-14",  "CRC",
-  "2023-05-30",  "CRC",
-  "2023-06-29",  "CRC",
-  "2023-07-13",  "CRC",
-  "2023-08-03",  "CRC",
-  "2023-09-01",  "CRC",
-  "2023-10-06",  "CRC",
-  "2023-01-05",  "OWC",
-  "2023-02-10",  "OWC",
-  "2023-03-28",  "OWC",
-  "2023-04-21",  "OWC",
-  "2023-05-10",  "OWC",
-  "2023-06-22",  "OWC",
-  "2023-07-25",  "OWC",
-  "2023-08-10",  "OWC",
-  "2023-09-08",  "OWC",
-  "2023-10-20",  "OWC",
-  "2023-01-12",  "PTR",
-  "2023-02-24",  "PTR",
-  "2023-07-26",  "PTR",
-  "2023-08-17",  "PTR",
-  "2023-10-11",  "PTR"
-) %>%
-  mutate(Date = as.Date(Date))
+## label format 
+```{r, echo=FALSE}
+# Table describing the days we have visited each site - site is already included manually in the label during measurement
+# site_lookup <- tibble::tribble(
+#   ~Date,         ~Site,
+#   "2024-02-02",  "CRC",
+#   "2024-04-26",  "CRC",
+#   "2024-07-30",  "CRC",
+#   "2024-10-29",  "CRC",
+#   "2024-02-23",  "OWC",
+#   "2024-04-19",  "OWC",
+#   "2024-07-31",  "OWC",
+#   "2024-10-18",  "OWC",
+#   "2024-02-13",  "PTR",
+#   "2024-10-22",  "PTR",
+#   "2024-08-07",  "PTR",
+#   ) %>%
+#   mutate(Date = as.Date(Date))
 
 # alldat  - date formatting
 alldat <- alldat %>%
-  mutate(Date = as.Date(TIMESTAMP))%>%
-  left_join(site_lookup, by = "Date")
-
+  mutate(Date = as.Date(TIMESTAMP))%>%filter(lubridate::year(Date) == 2024)
 
 # Fixing label code problems 
 alldat <- alldat %>%
-  
-  ## Remove known invalid labels
-  filter(!label %in% c("Test2", "Up30", "Up30c", "Up27")) %>%
-
-  ## Normalize the raw label (do NOT trust embedded site)
   mutate(
     label = label %>%
-      str_remove_all("[sSeE]") %>%          # remove stray s/e
-      str_replace_all("-", "_") %>%         # standardize separators
-      str_replace_all(c(
-        "[Ww][tT]"     = "W",
-        "[Tt][Rr][a]?" = "TR",
-        "[Uu][Pp]"     = "UP",
-        "[Ww][lL]"     = "W",
-        "[w]"          = "W"
-      )) %>%
-      ## ensure ZONE_NUMBER format (W46 → W_46, TR34 → TR_34)
-      str_replace("_(W|TR|UP)(\\d)", "_\\1_\\2") %>%
-      ## separate suffix from number (48a → 48_a)
-      str_replace("(\\d+)([A-Za-z])$", "\\1_\\2")
-  ) %>%
+      str_replace_all("-", "_") %>%
+      str_replace_all("\\s+", "") %>%
+      toupper(),
 
-  ## Remove ANY site embedded in the original label
-  mutate(
-    label_core = str_remove(label, "^(CRC|OWC|PTR)_?")
-  ) %>%
+    label = label %>%
+      str_replace_all("_WE_", "_W_") %>%
+      str_replace_all("_WET_", "_W_"),
 
-  ## Rebuild label using ONLY the site from site_lookup  #OWC recorded wrongly on 2023-Jan-12 instead of PTR
-  mutate(
-    label = paste0(Site, "_", label_core)
-  ) %>%
+    label = str_replace(label, "^LE_(CRC|OWC|PTR)_", "\\1_"),
 
-  ## Standardize suffixes (only when they exist)
-  mutate(
-    n_underscores = str_count(label, "_"),
-    suffix = str_extract(label, "(?<=_)[^_]+$"),
-    label = if_else(
-      n_underscores >= 3 & !is.na(suffix),
-      str_replace(
-        label,
-        paste0("_", suffix, "$"),
-        paste0("_", tolower(suffix))
-      ),
-      label
-    )
-  ) %>%
+    Site = str_extract(label, "^(CRC|OWC|PTR)"),
 
-  ## Final cleanup
-  select(-label_core, -n_underscores, -suffix)
+    Zone = str_extract(label, "(?<=_)(UP|TR|W)(?=_)"),
 
+    Replicate = as.integer(
+      str_extract(label, "(?<=_(UP|TR|W)_)[0-9]+")),
 
+    label = str_replace(label, "([0-9])([A-Z])$", "\\1_\\2"))
+ 
+
+#correcting labels that were recorded without zone
+alldat <- alldat %>%
+    mutate(Replicate = coalesce(
+            Replicate,
+            as.integer(str_extract(label, "(?<=_)[0-9]+")))) %>%
+    mutate(Zone = if_else(
+            is.na(Zone) &
+                Site == "CRC" &
+                Replicate %in% c(33, 34, 36, 37, 38, 39, 40),"TR",Zone)) %>%
+    mutate(label = if_else(
+            Site == "CRC" &
+                !grepl("_(UP|TR|W)_", label) &
+                Replicate %in% c(33, 34, 36, 37, 38, 39, 40),
+            str_replace(label, "^CRC_", "CRC_TR_"),
+            label )  )
 
 #I have to change labels that were recorded wrong - tracked in the field notes
 
-# CRC 02-21-2023 TR 36 -> recorded as W but it is a TR sample
-# CRC 02-21-2023 TR 37 -> recorded as W but it is a TR sample
-# CRC 02-21-2023 TR 38 -> recorded as UP but it is a TR sample
-# CRC 02-21-2023 TR 40 -> recorded as UP but it is a TR sample
-# CRC 03-24-2023 W 48 -> recorded as TR but it is a W sample
-
-# CRC 10-06-2023 TR 37 -> recorded as UP but it is a TR sample
-# CRC 10-06-2023 TR 39 -> recorded as UP but it is a TR sample
-# CRC 10-06-2023 TR 40 -> recorded as UP but it is a TR sample
-
-# OWC 04-21-2023 TR 58 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 60 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 61 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 63 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 64 -> recorded as UP but it is a TR sample
-
-#extracting the collar number from the label
-alldat <- alldat %>%
-  mutate(
-    PlotNum = as.integer(stringr::str_extract(label, "(?<=_)\\d+(?=(_|$))"))
-  )
-
 #correcting the zone that was saved wrongly
 
-alldat <- alldat %>%
-  mutate( label = case_when(
-      # CRC 02-21-2023 — TR was saved wrongly as W
-      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(36, 37) ~
-        stringr::str_replace(label, "_W_", "_TR_"),
+# alldat <- alldat %>%
+#   mutate( label = case_when(
+#       # CRC 02-21-2023 — TR was saved wrongly as W
+#       Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(36, 37) ~
+#         stringr::str_replace(label, "_W_", "_TR_"),
+# 
+#       Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(38, 40) ~
+#         stringr::str_replace(label, "_UP_", "_TR_"),
+# 
+#       # CRC 03-24-2023 — W was saved wrongly as TR
+#       Site == "CRC" & Date == as.Date("2023-03-24") & PlotNum == 48 ~
+#         stringr::str_replace(label, "_TR_", "_W_"),
+# 
+#       # CRC 10-06-2023 — TR was saved wrongly as UP
+#       Site == "CRC" & Date == as.Date("2023-10-06") & PlotNum %in% c(37, 39, 40) ~
+#         stringr::str_replace(label, "_UP_", "_TR_"),
+#       
+#       # OWC 04-21-2023 — UP was saved wrongly as TR
+#       Site == "OWC" & Date == as.Date("2023-04-21") & PlotNum %in% c(58, 60, 61, 63, 64) ~
+#         stringr::str_replace(label, "_UP_", "_TR_"),
+# 
+#       TRUE ~ label
+#     )
+#   )
+#checking missing field days relabel
 
-      Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(38, 40) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
-
-      # CRC 03-24-2023 — W was saved wrongly as TR
-      Site == "CRC" & Date == as.Date("2023-03-24") & PlotNum == 48 ~
-        stringr::str_replace(label, "_TR_", "_W_"),
-
-      # CRC 10-06-2023 — TR was saved wrongly as UP
-      Site == "CRC" & Date == as.Date("2023-10-06") & PlotNum %in% c(37, 39, 40) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
-      
-      # OWC 04-21-2023 — UP was saved wrongly as TR
-      Site == "OWC" & Date == as.Date("2023-04-21") & PlotNum %in% c(58, 60, 61, 63, 64) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
-
-      TRUE ~ label
-    )
-  )
-
-
+# alldat %>%
+#      filter(is.na(Site)) %>%
+#      distinct(Date) %>%
+#      arrange(Date)
 ```
 
 ## Create a unique Plot_ID, check if there is a meta-data file, if not, create a meta-data file
-```{r}
+```{r, echo=FALSE}
 
 ############### only run this first part if you don't already have a meta-data file 
         #because if you do then all the data for each one will have a plot and you won't be able to change start times
@@ -305,7 +261,7 @@ if (file.exists(file_path)) {
 ```
 
 ## Mark fluxes that were retaken - this is the first issue! Need to get all but last flux to be TRUE for drop - fieldnotes with explanation for flux retaken - usually weird zeros, Steven probe not inserted in the soil, or label mistake  
-```{r}
+```{r, echo=FALSE}
 
 # fluxes that were retaken have similar names with a letter after it 
 metadata_filtered <- metadata %>%
@@ -347,7 +303,7 @@ metadata_filtered <- metadata_filtered %>%
 ##Dont need to pull L1 temp data or any other temps like we do for macrophyte because the smartchamber records the temp
 
 ## Match up the metadata to the rest of the data   
-```{r}
+```{r, echo=FALSE}
 #remove any metadata rows that have NAs for the PlotID
 metadata_filtered  <- metadata_filtered %>%
   filter(!is.na(Plot_ID)) %>%
@@ -406,116 +362,142 @@ alldat <- alldat %>%
 ```
 
 ## fixing some Deadbands  
-```{r}
+```{r, echo=FALSE}
 # Table of plots with custom deadband adjustments
-deadband_overrides <- tibble::tibble(
-  Plot_ID = c(
-    "2023_06_29_CRC_UP_29_1",
-   "2023_05_10_OWC_TR_61_1",
-   "2023_06_22_OWC_TR_60_2",
-   "2023_06_22_OWC_TR_63_2",
-   "2023_06_29_CRC_UP_26_2",
-   "2023_06_22_OWC_TR_65_2",
-   "2023_07_13_CRC_TR_39_2",
-   "2023_01_05_OWC_TR_60_1",
-   "2023_07_13_CRC_TR_33_2",
-   "2023_06_22_OWC_TR_68_2",
-   "2023_06_22_OWC_W_69_2",
-   "2023_07_13_CRC_TR_37_2",
-   "2023_06_22_OWC_UP_55_2",
-   "2023_06_22_OWC_TR_64_2",
-   "2023_04_21_OWC_UP_58_2",
-   "2023_07_13_CRC_TR_34_3_2",
-   "2023_06_22_OWC_UP_52_1",
-   "2023_06_22_OWC_TR_60_2",
-   "2023_05_10_OWC_TR_61_1",
-   "2023_06_22_OWC_TR_58_1",
-   "2023_06_22_OWC_W_67_2",
-   "2023_06_29_CRC_TR_36_2",
-   "2023_05_10_OWC_TR_63_2",
-   "2023_01_05_OWC_TR_63_1"
-  ),
-  DeadBand_override = c(
-    5,
-    7,
-    6,
-    10,
-    8,
-    12,
-    9,
-    11,
-    13,
-    7,
-    10,
-    11,
-    9,
-    9,
-    10,
-    9,
-    8,
-    11,
-    14,
-    8,
-    11,
-    11,
-    16,
-    12
-    
-  )
+time_overrides <- tibble::tibble(
+  Plot_ID = c("2024_07_30_CRC_UP_26_b_2",
+              "2024_07_31_OWC_UP_52_2",
+              "2024_07_31_OWC_TR_63_2",
+              "2024_07_31_OWC_W_72_1",
+              "2024_07_31_OWC_W_68_2",
+              "2024_02_23_OWC_W_66_b_1",
+              "2024_07_30_CRC_UP_32_a_1",
+              "2024_07_30_CRC_UP_27_1",
+              "2024_02_23_OWC_UP_51_B_1",
+              "2024_08_07_PTR_W_18_2",
+              "2024_08_07_PTR_W_22_1",
+              "2024_07_30_CRC_L_CRC_36_2",  # TO DO: CORRECT LABEL
+              "2024_07_30_CRC_UP_25_2",
+              "2024_07_31_OWC_UP_53_1",
+              "2024_02_23_OWC_W_65_1",
+              "2024_07_31_OWC_W_72_2",
+              "2024_07_31_OWC_UP_51_2",
+              "2024_02_02_CRC_TR_39_1",
+              "2024_02_02_CRC_TR_39_2",
+              "2024_07_30_CRC_L_CRC_38_2",   # TO DO: CORRECT LABEL
+              "2024_07_31_OWC_TR_61_2",
+              "2024_02_23_OWC_W_72_1",
+              "2024_02_23_OWC_TR_58_2",
+              "2024_02_23_OWC_TR_60_1",
+              "2024_02_23_OWC_TR_58_1",
+              "2024_02_02_CRC_W_43_1",
+              "2024_02_23_OWC_W_67_2",
+              "2024_07_31_OWC_W_68_1"),
+  DeadBand_override = c( 15,
+                         7,
+                         12,
+                         15,
+                         15,
+                         5,
+                         15,
+                         15,
+                         10,
+                         5,
+                         6,
+                         3,
+                         15,
+                         3,
+                         5,
+                         15,
+                         12,
+                         6,
+                         4,
+                         15,
+                         5,
+                         6,
+                         10,
+                         10,
+                         8,
+                         15,
+                         13,
+                         15),
+  stop_offset_secs = NA_real_   
 )
 
-# Default deadband
-alldat <- alldat %>%
-  mutate(DeadBand_used = DeadBand) 
 
-# Apply per-plot overrides
-alldat <- alldat %>%
-  left_join(deadband_overrides, by = "Plot_ID") %>%
+#apply new incubation period
+alldat_trimmed <- alldat %>%
+  left_join(time_overrides, by = "Plot_ID") %>%
+  group_by(Plot_ID) %>%
   mutate(
-    DeadBand_used = if_else(
+    t_start_original = min(TIMESTAMP),
+    t_end_original   = max(TIMESTAMP),
+    
+    # deadband manual or metadat
+    t_start_adjusted = if_else(
       !is.na(DeadBand_override),
-      DeadBand_override,
-      DeadBand_used
+      t_start_original + DeadBand_override,
+      t_start_original + as.numeric(coalesce(first(DeadBand), 0))
+    ),
+    
+    # new offset 
+    t_end_adjusted = if_else(
+      !is.na(stop_offset_secs),
+      t_end_original + stop_offset_secs,
+      t_end_original
     )
   ) %>%
-  select(-DeadBand_override)
+  filter(TIMESTAMP >= t_start_adjusted,   
+         TIMESTAMP <= t_end_adjusted) %>% 
+  ungroup() %>%
+  select(-t_start_original, -t_end_original, 
+         -t_start_adjusted, -t_end_adjusted,
+         -DeadBand_override,-stop_offset_secs)
 
 ```
 
+##Extracting initial CO2 concentration
+```{r, echo=FALSE}
+
+## Extract initial concentration (t0) for each Plot for QAQC later
+#saving df to use after flux calculation
+df_CO2_in <- alldat_trimmed %>%
+  arrange(Plot_ID, TIMESTAMP) %>%
+  group_by(Plot_ID) %>%
+  summarise(CO2_initial = first(co2), .groups = "drop")  
+
+```
 
 ## Change the units from ppb to nmol  
-```{r}
+```{r, echo=FALSE}
 #change the units
-alldat$CO2_umol <- ffi_ppb_to_nmol(alldat$co2, 
-                                volume = (alldat$TotalVolume_fixed_cm3 / 1000000), # have to divide to get to m3
-                                temp = alldat$chamber_t)    # degrees C
+alldat_trimmed$CO2_umol <- ffi_ppb_to_nmol(alldat_trimmed$co2, 
+                                volume = (alldat_trimmed$TotalVolume_fixed_cm3 / 1000000), # have to divide to get to m3
+                                temp = alldat_trimmed$chamber_t)    # degrees C
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat$CO2_umol_m2 <- alldat$CO2_umol / 0.0318 #adjust for the area 
+alldat_trimmed$CO2_umol_m2 <-alldat_trimmed$CO2_umol / 0.0318 #adjust for the area 
 
 
 ```
 
 ## Calculate fluxes
-```{r, message=FALSE, warning = FALSE, results ='hide'}
-
-#need to create a new line that would say only calculate the flux if the drop column is false
-alldat_dropped<-alldat%>%filter(drop!=TRUE)
+```{r, message=FALSE, warning = FALSE, results ='hide', echo=FALSE}
 
 #selecting the base id to include in the flux df later
-plot_base_lookup <- alldat_dropped%>%
+plot_base_lookup <- alldat_trimmed%>%
   select(Plot_ID, base_id)%>% 
   filter(!is.na(base_id)) %>%   
   distinct(Plot_ID, .keep_all = TRUE)
 
 
 #calculate fluxes for all other sites 
-fluxes <- ffi_compute_fluxes(alldat_dropped,
+fluxes <- ffi_compute_fluxes(alldat_trimmed,
                              group_column = "Plot_ID", 
                              time_column = "TIMESTAMP", 
                              gas_column = "CO2_umol_m2", 
-                             dead_band = "DeadBand_used"
+                             dead_band = "DeadBand"
                              )
 head(fluxes)
 #including the unique ID 
@@ -523,37 +505,23 @@ fluxes <- fluxes %>%
   left_join(plot_base_lookup, by = "Plot_ID")
 
 ##Create a dataframe with averaged soil probe data per Plot and add to flux data
-soildat <- alldat %>% 
+soildat <- alldat_trimmed%>% 
     group_by(Plot_ID) %>%
   dplyr::summarize(
      soilp_c = mean(soilp_c, na.rm=TRUE),
      soilp_m = mean(soilp_m, na.rm=TRUE),
      soilp_t = mean(soilp_t, na.rm=TRUE))
 
-alldf <- left_join(fluxes, soildat, by = "Plot_ID")
-
-fluxes_neg <- as.data.frame(subset(alldf, lin_flux.estimate < 0, select = Plot_ID:TIMESTAMP_max))
-
-(print(fluxes_neg))
-
-allflux <-alldf%>%filter(lin_flux.estimate > 0)
-
-# saving a negative CO2 flux table to remove int he CH4 flux script
-drop_neg_CO2 <- alldf %>%
-  filter(lin_flux.estimate < 0) %>%
-  select(Plot_ID, TIMESTAMP_min, TIMESTAMP_max) %>%
-  mutate(drop_CO2 = TRUE)
-
-saveRDS(drop_neg_CO2, "drop_neg_CO2_2023.rds")
+allflux  <- left_join(fluxes, soildat, by = "Plot_ID")
 
 ```
 
 
 ## Visualize fluxes and sort by r2 
-```{r}
+```{r, echo=FALSE}
 
 #take a look at the fluxes we calculated with R2 
-ggplot(allflux, aes(Plot_ID, lin_flux.estimate, color = lin_r.squared)) +
+ggplot(allflux , aes(Plot_ID, lin_flux.estimate, color = lin_r.squared)) +
   geom_point(size=4) + theme_classic() + #ylim(-10,50) + 
   geom_linerange(aes(ymin = lin_flux.estimate- lin_flux.std.error,
                    ymax = lin_flux.estimate+ lin_flux.std.error)) +
@@ -581,52 +549,72 @@ tails <- rbind(fluxes_low, fluxes_high)
 ```
 
 ## check the fluxes for which I changed the start time due to lags or ebullition (recorded in notes of metadata)
-```{r}
+```{r, echo=FALSE}
 
-#### If something is in a V shape should we take the second part to make a positive linear curve?
+# grab trim limits for each overridden Plot
+trim_limits <- alldat_trimmed %>%
+  filter(Plot_ID %in% time_overrides$Plot_ID) %>%
+  group_by(Plot_ID) %>%
+  summarise(
+    t_start_trim = min(TIMESTAMP),
+    t_end_trim   = max(TIMESTAMP),
+    .groups = "drop"
+  )
 
-# Subset data and create relative time (seconds since flux start)
+# use full alldat + trim limits to classify each point
 r_all <- alldat %>%
-  filter(Plot_ID %in% deadband_overrides$Plot_ID) %>%
+  filter(Plot_ID %in% time_overrides$Plot_ID) %>%
+  left_join(trim_limits, by = "Plot_ID") %>%
   group_by(Plot_ID) %>%
   mutate(
-    time_sec = as.numeric(
-      difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")
+    time_sec = as.numeric(difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")),
+    point_status = case_when(
+      TIMESTAMP < t_start_trim ~ "Discarded (DeadBand)",
+      TIMESTAMP > t_end_trim   ~ "Discarded (stop trim)",
+      TRUE                     ~ "Used"
     )
   ) %>%
   ungroup()
 
+# ---- PLOTTING: one plot per Plot_ID (PDF friendly) ----
 
-# Random sample of plots for visualization
-plots_sample <- sample(unique(r_all$Plot_ID), 2,replace = FALSE)
+plot_ids <- unique(r_all$Plot_ID)
 
-r_plot <- r_all %>%
-  filter(Plot_ID %in% plots_sample)
+for (P in plot_ids) {
 
-# Plot
-ggplot(
-  r_plot,
-  aes(
-    x = TIMESTAMP,
-    y = co2,
-    color = time_sec >= DeadBand_used
-  )
-) +
-  geom_point(size = 1.8) +
-  facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +
-  scale_color_manual(
-    values = c("grey60", "red"),
-    labels = c("Discarded (deadband)", "Used after deadband")
+  p <- ggplot(
+    r_all %>% filter(Plot_ID == P),
+    aes(x = TIMESTAMP, y = co2, color = point_status)
   ) +
-  theme_classic() +
-  ylab(expression(paste(CO[2], " (ppm)"))) +
-  xlab("Time")
+    geom_point(size = 1.8) +
+    scale_color_manual(
+      values = c(
+        "Used"                  = "#E41A1C",
+        "Discarded (DeadBand)"  = "grey60",
+        "Discarded (stop trim)" = "grey20"
+      )
+    ) +
+    theme_classic(base_size = 12) +
+    ylab(expression(paste(CO[2], " (ppm)"))) +
+    xlab("Time") +
+    labs(
+      title = paste("Incubation Period Adjustments:", P),
+      color = "Point Status"
+    ) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(face = "bold")
+    )
+
+  print(p)   # IMPORTANT: each print() = new page in PDF
+}
+
 
 ```
 
 
 ## Spot check a few fluxes with R2 > 0.9  
-```{r, echo=FALSE}
+```{r, echo=FALSE, echo=FALSE}
 
 ### pull a random sample of good fluxes to check and plot 
 good_plots <- unique(fluxes_good$Plot_ID)
@@ -637,7 +625,7 @@ good_sample <- sample(good_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in good_sample){ 
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed , Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), co2)) + geom_point() + 
   scale_x_datetime(breaks = "15 sec") + 
   theme_classic() +
@@ -664,7 +652,7 @@ low_sample <- sample(low_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in low_sample){ 
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed  , Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, co2)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -686,11 +674,11 @@ bad_plots <- unique(fluxes_weird$Plot_ID)
 
 # take a random sample (FALSE so we don't get the same plot twice)
 # set.seed(...) to guarantee reproducibility
-bad_sample <- sample(bad_plots, 5, replace=FALSE)
+bad_sample <- sample(bad_plots, 2, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in bad_sample){ 
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed , Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, co2)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -716,7 +704,7 @@ tail_sample <- sample(tail_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in tail_sample){ 
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed , Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, co2)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -735,7 +723,7 @@ for(P in tail_sample){
 ```{r, echo=FALSE}
 
 ##Put all fluxes together
-fluxes_all <- as.data.frame(subset(allflux, select = Plot_ID:TIMESTAMP_max))
+fluxes_all <- as.data.frame(subset(alldat_trimmed))
 
 all_plots <- unique(fluxes_all$Plot_ID)
 
@@ -745,7 +733,7 @@ all_sample <- sample(all_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above
 for(P in all_sample){
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, co2)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") +
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -757,33 +745,159 @@ for(P in all_sample){
 ####################
 ```
 
+## QAQC - Flags
 
-## Remove any fluxes that do not fit criteria 
 ```{r, echo=FALSE}
 
-# Create a new dataframe by removing rows that were present in fluxes_weird (8 obs)
-#allflux_filtered <- allflux[!(allflux$Plot_ID %in% fluxes_weird$Plot_ID), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad
+#Adding CO2 intital per Plot 
+ allflux<- allflux %>%
+  left_join(df_CO2_in, by = "Plot_ID") 
 
-#Any others that are not in the weird category that need to be removed: 
-  #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
+# QAQC flags 
+fluxes_flagged <- allflux %>%
+  mutate(
+    # model fit flags
+    CO2_lin_pass  = (lin_r.squared  >= 0.85 | lin_RMSE  < 5) & !is.na(lin_r.squared),
+    CO2_HM81_pass = (HM81_r.squared >= 0.85 | HM81_RMSE < 5) & !is.na(HM81_r.squared),
+    CO2_poly_pass = (poly_r.squared >= 0.85 | poly_RMSE < 5) & !is.na(poly_r.squared),
+    # initial conc flag (CH4 initial conc)
+    CO2_init_conc        = CO2_initial > 600 | is.na(lin_flux.estimate),
+    # negative flux flag
+    CO2_neg_flux       = lin_flux.estimate < 0 | is.na(lin_flux.estimate),
+    # rejection flags
+    CO2_rejected_model  = !(CO2_lin_pass | CO2_HM81_pass | CO2_poly_pass),
+    CO2_rejected_negflux = CO2_neg_flux,
+    CO2_flux_rejected   = CO2_rejected_model | CO2_rejected_negflux
+  )
 
-# allflux_filtered <- allflux %>%
-#   filter(!Plot_ID %in% c("", #leak 
-#                          ""  #plateau + sharp increase - soil disturbed during measurement?
-#                       ))
+# percentage of problems
+r2_summary <- fluxes_flagged %>%
+  summarise(
+    CO2_total_obs          = n(),
+    CO2_n_rejected_model   = sum(CO2_rejected_model,   na.rm = TRUE),
+    CO2_n_rejected_negflux = sum(CO2_rejected_negflux, na.rm = TRUE),
+    CO2_n_rejected_both    = sum(CO2_rejected_model & CO2_rejected_negflux, na.rm = TRUE),
+    CO2_n_rejected_total   = sum(CO2_flux_rejected,    na.rm = TRUE),
+    CO2_pct_rejected_total = 100 * CO2_n_rejected_total / CO2_total_obs,
+    CO2_n_rejected_init_conc =  sum(CO2_init_conc,    na.rm = TRUE),       
+    CO2_perct_init_conc    = 100 * CO2_n_rejected_init_conc / CO2_total_obs,
+    CO2_n_lin_pass         = sum(CO2_lin_pass,  na.rm = TRUE),
+    CO2_n_HM81_pass        = sum(CO2_HM81_pass, na.rm = TRUE),
+    CO2_n_poly_pass        = sum(CO2_poly_pass, na.rm = TRUE)
+  )
 
+# formatted table for PDF
+r2_summary %>%
+ tidyr::pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+  mutate(
+    Metric = recode(Metric,
+      CO2_total_obs          = "Total observations",
+      CO2_n_rejected_init_conc = "Rejected - [CO2] (n)" ,
+      CO2_perct_init_conc    = "Rejected — [CO2] (%)",
+      CO2_n_rejected_model   = "Rejected — poor model fit (n)",
+      CO2_n_rejected_negflux = "Rejected — negative CO2 flux (n)",
+      CO2_n_rejected_both    = "Rejected — both reasons (n)",
+      CO2_n_rejected_total   = "Rejected — total (n)",
+      CO2_pct_rejected_total = "Rejected — total (%)",
+      CO2_n_lin_pass         = "Passed — Linear model (n)",
+      CO2_n_HM81_pass        = "Passed — HM81 model (n)",
+      CO2_n_poly_pass        = "Passed — Polynomial model (n)"
+    ),
+    Value = ifelse(Metric == "Rejected — total (%)",
+                   round(Value, 1),
+                   as.integer(Value)) ) %>%
+  kable(
+    caption  = "QA/QC CO2 Flux Summary",
+    align    = c("l", "r"),
+    booktabs = TRUE,
+    format   = "latex") %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position"),
+    full_width    = FALSE ) %>%
+  pack_rows("Rejections",        2, 8) %>%
+  pack_rows("Model performance", 9, 11)
 
-# View the result
-# head(allflux_filtered)
+# R² vs RMSE diagnostic plot
+# pivot_longer keeps R²/RMSE columns and uses CH4_*_pass as the pass indicator
+set.seed(42)
+plot_data <- fluxes_flagged %>%
+  slice_sample(n = min(15000, nrow(.))) %>%
+  select(
+    lin_r.squared,  lin_RMSE,  CO2_lin_pass,
+    HM81_r.squared, HM81_RMSE, CO2_HM81_pass,
+    poly_r.squared, poly_RMSE, CO2_poly_pass,
+    CO2_rejected_negflux
+  ) %>%
+  # rename pass columns to match model prefix before pivoting
+  rename(
+    lin_pass  = CO2_lin_pass,
+    HM81_pass = CO2_HM81_pass,
+    poly_pass = CO2_poly_pass
+  ) %>%
+  pivot_longer(
+    cols = -CO2_rejected_negflux,
+    names_to  = c("model", ".value"),
+    names_pattern = "(lin|HM81|poly)_(.*)"
+  ) %>%
+  rename(r2 = r.squared) %>%
+  mutate(
+    model  = recode(model, lin = "Linear", HM81 = "HM81", poly = "Polynomial"),
+    status = case_when(
+      CO2_rejected_negflux ~ "Negative CO2",
+      pass                 ~ "Accepted",
+      TRUE                 ~ "Rejected"
+    )
+  ) %>%
+  filter(!is.na(r2), !is.na(RMSE))
+
+#graphing
+QAQC_plot <- ggplot(plot_data, aes(x = r2, y = RMSE, color = model, shape = status)) +
+  geom_point(size = 2) +
+  geom_vline(xintercept = 0.85, linetype = "dashed", color = "black", linewidth = 0.8) +
+  geom_hline(yintercept = 5,    linetype = "dashed", color = "black", linewidth = 0.8) +
+  annotate("text", x = 0.7, y = max(plot_data$RMSE, na.rm = TRUE) * 0.95,
+           label = "R² = 0.85", hjust = -0.1, size = 3.5, fontface = "bold") +
+  annotate("text", x = 0.1, y = 5,
+           label = "RMSE = 5", vjust = -0.5, size = 3.5, fontface = "bold") +
+  scale_color_manual(values = c(
+    "Linear"     = "#E41A1C",
+    "HM81"       = "#377EB8",
+    "Polynomial" = "#4DAF4A"
+  )) +
+  scale_shape_manual(values = c(
+    "Accepted"     = 16,
+    "Rejected"     = 4,
+    "Negative CO2" = 17 )) +
+  labs(
+    title = "R² vs RMSE — CO2 Flux QA/QC",
+    x     = "R²",
+    y     = "RMSE",
+    color = "Model",
+    shape = "Status"  ) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "right")
+
+print(QAQC_plot)
+```
+
+## Adding manual flag to reject any fluxes that do not fit criteria
+```{r, echo=FALSE}
+
+# adding manual flags to the ones that are crazy off based on visual checks
+manual_reject <- c() #plateau + sharp increase - soil disturbed during measurement?
+ 
+fluxes_flagged <- fluxes_flagged %>%
+  mutate(
+    CO2_rejected_manual  = Plot_ID %in% manual_reject,
+    CO2_flux_rejected   = CO2_rejected_model | CO2_rejected_negflux |CO2_rejected_manual)
 
 
 ```
 
-
 ## Do some visualization of QAQC plots to assess fluxes  
 ```{r, echo=FALSE}
 
-p1 <- ggplot(allflux, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)) +
+p1 <- ggplot(fluxes_flagged, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   labs(title = "A") + 
@@ -797,7 +911,7 @@ p1 <- ggplot(allflux, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)
         aspect.ratio = 1)
 p1
 
-p2 <- ggplot(allflux, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
+p2 <- ggplot(fluxes_flagged, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   xlim(0,1) + ylim(0,1) +
@@ -812,7 +926,7 @@ p2 <- ggplot(allflux, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
         aspect.ratio = 1)
 p2
 
-p3 <- ggplot(allflux, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+p3 <- ggplot(fluxes_flagged, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   #xlim(0,50) + #ylim(0,50) +
@@ -834,35 +948,45 @@ p3
 ## Read out final dataframe and export for use elsewhere 
 ```{r, echo=FALSE}
 
-allflux_filtered_renamed <- allflux %>%
-    separate(
+allflux_renamed <- fluxes_flagged %>%
+  separate(
     Plot_ID,
-    into = c("Year", "Month_num", "Day", "Site", "Zone", "Rest"),
+    into = c("Year", "Month_num", "Day", "Site", "Zone_raw", "Rest"),
     sep = "_",
     fill = "right",
     extra = "merge",
     remove = FALSE
   ) %>%
-  
   mutate(
-    Month = month.abb[as.integer(Month_num)],
-        # RepNumber is always the final number
-    RepNumber = as.integer(str_extract(Plot_ID, "[0-9]+$")),
-        # Replicate = numeric collar ID only (removes letters like a, b)
-    Replicate = as.integer(str_extract(Rest, "^[0-9]+"))
+    # (TR / UP / W)
+    Zone = str_extract(Zone_raw, "UP|TR|W"),
+
+    # collar ID - number after zone
+    Replicate = as.integer(
+      str_extract(Plot_ID, "(?<=_(UP|TR|W)_)[0-9]+")
+    ),
+
+    # meansurement replicate _1, _2)
+    RepNumber = as.integer(
+      str_extract(Plot_ID, "[0-9]+$")
+    ),
+
+    Month = month.abb[as.integer(Month_num)]
   ) %>%
-      
   rename(Plot = Plot_ID) %>%
-  
   select(
     RepNumber, Month, Site, Zone, Replicate, Plot,
     everything(),
-    -Year, -Day, -Month_num, -Rest, -base_id
+    -Year, -Day, -Month_num, -Zone_raw, -Rest
   )
 
+#checkf for labels 
+unique(allflux_renamed$Zone)
+unique(allflux_renamed$Replicate)
+unique(allflux_renamed$RepNumber)
 
 #export as a csv to the folder that you want 
-write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2023_CO2.csv", row.names = FALSE) 
+write.csv(allflux_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CO2.csv", row.names = FALSE) 
 #Change file name
 
 
