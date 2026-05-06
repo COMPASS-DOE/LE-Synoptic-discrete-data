@@ -1,6 +1,6 @@
 ---
-title: "COMPASS LE OWC Root Exclusion: Porewater Nutrients"
-author: "Apr-May 2024 Samples"
+title: "COMPASS Synopitic Porewater Nutrients 2022-2024"
+author: "Fausto Machado-Silva & Roberta B. Peixoto"
 date: "`r Sys.Date()`"
 output: 
   pdf_document:
@@ -14,19 +14,19 @@ output_dir: "To Be Reviewed/PDF"
 ## Run Information 
 ```{r run information, include=TRUE}
 #set the run date & user name 
-  run_date <- "08/20/2025"
-  sample_year <- "2024"
-  sample_month <- "Apr-May"
-  user <- "Roberta Peixoto"
+  run_date <- "03/06/2026"
+  sample_year <- "2023"
+  sample_month <- "Feb"
+  user <- "Machado-Silva"
   QAQC_by <- "Zoe Read"
 
 #identify the files you want to read in 
   #read in as a list to accommodate multiple runs in a month
-  data_files <- c("Raw Data/Seal_COMPASS_LE_OWC_RootExclusion_NUTR_Apr-May2024.csv")
+  data_files <- c("COMPASS_Box7_MonMon_NUTR_noPO4_385-465_Feb2023_JB.csv")
 
 # Define the file path for QAQC log file - NO Need to change just check year 
-  file_path <- "Raw Data/SEAL_COMPASS_LE_OWC_RootExclusion_QAQC_Log_2025.csv"
-  final_path <- "Processed Data/COMPASS_LE_OWC_RootExclusion_Nutrients_2024_Apr-May2024.csv"
+  file_path <- "Raw Data/COMPASS_Box7_MonMon_NUTR_noPO4_385-465_Feb2023_JB.csv"
+  final_path <- "Processed Data/COMPASS_Box7_MonMon_NUTR_noPO4_385-465_Feb2023_JB.csv"
 
 #record any notes about the run or anything other info here: 
   run_notes <- "The last CCV check std for Phosphate is very high. 
@@ -122,7 +122,7 @@ rep_flag = 25
 ```{r pull in metadata for later, include=FALSE}
 
 #read in the raw metadata file 
-raw_metadata <- read.csv(Raw_Metadata)
+raw_metadata <- read.csv(Metadata_Porewater_LE_Nutrients)
 
 head(raw_metadata)
 # 1_1_R34_4192024_ch1_trC_cm

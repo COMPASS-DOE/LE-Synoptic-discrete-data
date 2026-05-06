@@ -27,6 +27,7 @@ library(lubridate)
 
 ```{r, include = FALSE}
 
+library(here)
 
 ch4 <- read.csv("Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CH4.csv")
 

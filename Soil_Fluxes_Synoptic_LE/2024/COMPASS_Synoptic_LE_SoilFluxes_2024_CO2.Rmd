@@ -49,8 +49,7 @@ library(kableExtra)
 ## Pull in Smart Chamber Files from the Raw Data folder
 ```{r, message=FALSE, warning = FALSE, results ='hide', echo=FALSE}
 
-# Create a temporary directory
-tmp_dir <- tempdir()
+library(data.table)
 
 # Path to the zip file
 zip_file <- "D:/GitHub/LE-Synoptic-discrete-data/Soil_Fluxes_Synoptic_LE/2024/Raw Data_LE_2024.zip"
@@ -116,6 +115,11 @@ alldat <- alldat %>%
 
 # Fixing label code problems 
 alldat <- alldat %>%
+  
+  ## Remove known invalid labels
+  #filter(!label %in% c("")) %>%
+
+  ## Normalize the raw label (do NOT trust embedded site)
   mutate(
     label = label %>%
       str_replace_all("-", "_") %>%
@@ -208,8 +212,8 @@ alldat <- alldat %>%
 #this needs to be PLot ID so that later we ID plot from metadata and not the metadata row 
 
 # Path inside the zip
-zip_file <- "Raw Data_LE_2023.zip"
-csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
+zip_file <- "Raw Data_LE_2024.zip"
+csv_inside_zip <- "Raw Data/COMPASS_SmartChamber_Metadata_2024.csv"
 
 # Make sure the destination folder exists
 dir.create("Raw Data", showWarnings = FALSE)
@@ -224,7 +228,7 @@ if (!file.exists(csv_inside_zip)) {
 }
 
 # Define the file path where you want to save the CSV file
-file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2023.csv"
+file_path <- "Raw Data/COMPASS_SmartChamber_Metadata_2024.csv"
 
 # Check if the CSV file exists
 if (file.exists(file_path)) {
@@ -989,7 +993,13 @@ unique(allflux_renamed$RepNumber)
 write.csv(allflux_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CO2.csv", row.names = FALSE) 
 #Change file name
 
+dir.create("Processed Data", showWarnings = FALSE, recursive = TRUE)
 
+write.csv(
+  allflux_filtered_renamed,
+  file = "Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2024_CO2.csv",
+  row.names = FALSE
+)
 ```
 
 

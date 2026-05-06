@@ -1,0 +1,406 @@
+---
+title: "Synoptic LE: Tree Fluxes 2022"
+author: "Roberta Peixoto"
+date: today
+format:
+  pdf:
+    toc: true
+    number-sections: true
+output-dir: "2022/PDF"
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(stringr)
+library(readxl)
+library(tidyr)
+library(tibble)
+library(openxlsx)
+library(arrow)
+library(purrr)
+library(lubridate)
+library(kableExtra)
+```
+
+## Read in and collate all the files in the Processed Data folder
+
+```{r, include = FALSE}
+
+ch4 <- read.csv(
+  "Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2022_CH4.csv",
+  stringsAsFactors = FALSE
+)
+
+
+ch4 <-ch4 %>%
+  mutate(
+    TIMESTAMP     = ymd_hms(TIMESTAMP),
+    TIMESTAMP_min = ymd_hms(TIMESTAMP_min),
+    TIMESTAMP_max = ymd_hms(TIMESTAMP_max),
+    #TIMESTAMP_min = mdy_hm(TIMESTAMP_min),
+    #TIMESTAMP_max = mdy_hm(TIMESTAMP_max),
+    Date  = ymd(Date),
+    #Date  = mdy(Date),
+    Site  = factor(str_trim(Site)),
+    Zone  = factor(str_trim(Zone)),
+    Month = factor(str_trim(Month), levels = month.abb),
+
+    Replicate  = as.integer(Replicate),
+    Row_ID    = as.integer(Row_ID),
+    Plot_clean = str_trim(Plot_clean),
+
+   # ch4_qaqc_flag = NA_character_
+  ) %>%
+  rename_with(
+    ~ paste0("ch4_", .x),
+    matches("^(HM81_|lin_|poly_|rob_)")
+  ) %>%
+  mutate(
+    TIMESTAMP = round(TIMESTAMP_min, "secs")
+  )
+
+
+
+co2 <- read.csv("Processed Data/COMPASS_Synoptic_LE_TreeStem_Fluxes_Final_2022_CO2.csv",
+  stringsAsFactors = FALSE)
+
+co2 <-co2 %>%
+  mutate(
+    TIMESTAMP     = ymd_hms(TIMESTAMP),
+    TIMESTAMP_min = ymd_hms(TIMESTAMP_min),
+    TIMESTAMP_max = ymd_hms(TIMESTAMP_max),
+    #TIMESTAMP_min = mdy_hm(TIMESTAMP_min),
+    #TIMESTAMP_max = mdy_hm(TIMESTAMP_max),
+    Date  = ymd(Date),
+    #Date  = mdy(Date),
+    Site  = factor(str_trim(Site)),
+    Zone  = factor(str_trim(Zone)),
+    Month = factor(str_trim(Month), levels = month.abb),
+
+    Replicate  = as.integer(Replicate),
+    Row_ID    = as.integer(Row_ID),
+    Plot_clean = str_trim(Plot_clean),
+
+  #  co2_qaqc_flag = NA_character_
+  ) %>%
+  rename_with(
+    ~ paste0("co2_", .x),
+    matches("^(HM81_|lin_|poly_|rob_)")
+  ) %>%
+  mutate(
+    TIMESTAMP = round(TIMESTAMP_min, "secs")
+  )
+
+# Combine all files
+all_dat <- left_join(
+  co2,
+  ch4,
+  by = c(
+    "Plot_clean",
+    "Site",
+    "Zone",
+    "Month",
+    "Replicate",
+     "Date",
+    "Row_ID",
+    "TIMESTAMP",
+    "TIMESTAMP_min",
+    "TIMESTAMP_max"
+  )
+)
+
+```
+
+## Remove bad fluxes and calculate how many there were
+
+```{r}
+
+##Remove any samples with Flags in the final qaqc_flag columns
+final_dat <- all_dat %>% 
+  filter(!grepl("TRUE", CH4_rejected_model, ignore.case = TRUE)) %>% 
+  filter(!grepl("TRUE", CO2_flux_rejected , ignore.case = TRUE)) 
+
+##Removed both CH4 and CO2 obs when CO2 fluxes were negative and when visual checks showed weird bumps and chamber leak. 
+
+# count before and after filtering
+n_total_co2  <- nrow(all_dat)
+n_total_ch4  <- nrow(all_dat)
+
+final_dat <- all_dat %>%
+  filter(CH4_rejected_model == FALSE | is.na(CH4_rejected_model)) %>%
+  filter(CO2_flux_rejected  == FALSE | is.na(CO2_flux_rejected))
+
+n_final      <- nrow(final_dat)
+n_removed_co2 <- sum(all_dat$CO2_flux_rejected  == TRUE, na.rm = TRUE)
+n_removed_ch4 <- sum(all_dat$CH4_rejected_model == TRUE, na.rm = TRUE)
+n_removed_either <- n_total_co2 - n_final
+
+# build summary table
+filter_summary <- tibble::tibble(
+  Metric = c(
+    "Total observations (joined dataset)",
+    "CO2 — observations rejected (n)",
+    "CO2 — observations rejected (%)",
+    "CH4 — observations rejected (n)",
+    "CH4 — observations rejected (%)",
+    "Removed by both flags simultaneously (n)",
+    "Total unique observations removed (n)",
+    "Total unique observations removed (%)",
+    "Final observations retained (n)"
+  ),
+  Value = c(
+    n_total_co2,
+    n_removed_co2,
+    round(100 * n_removed_co2    / n_total_co2, 1),
+    n_removed_ch4,
+    round(100 * n_removed_ch4    / n_total_co2, 1),
+    sum(all_dat$CO2_flux_rejected == TRUE & 
+        all_dat$CH4_rejected_model == TRUE, na.rm = TRUE),
+    n_removed_either,
+    round(100 * n_removed_either / n_total_co2, 1),
+    n_final
+  )
+)
+
+filter_summary %>%
+  kable(
+    caption  = "Post-Join QA/QC Filtering Summary",
+    align    = c("l", "r"),
+    booktabs = TRUE,
+    format   = "latex"
+  ) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position"),
+    full_width    = FALSE
+  ) %>%
+  pack_rows("CO2 flags",          2, 3) %>%
+  pack_rows("CH4 flags",          4, 5) %>%
+  pack_rows("Combined filtering", 6, 9)
+
+```
+
+## Write out files
+
+```{r write out combined data and metadata, include=FALSE}
+
+#write out a csv of all the data to the main folder: 
+write.csv(all_dat, "COMPASS_Synoptic_LE_Tree_Fluxes_2022.csv", row.names = FALSE)
+
+```
+
+## All Data by Year, Site and Zone
+
+```{r Visualize Data, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 300}
+
+data_plotting <- all_dat
+
+#Order by Zone from Upland to Surface Water
+data_plotting$Zone = factor(data_plotting$Zone, levels = c("UP", "TR"))
+data_plotting <- data_plotting[order(data_plotting$Zone), ]
+
+#Order by Site from CRC, PTR, OWC order, which is less to more protected from the efects of the lake water level fluctuation
+data_plotting$Site = factor(data_plotting$Site, levels = c("CRC", "PTR", "OWC"))
+data_plotting <- data_plotting[order(data_plotting$Site), ]
+
+#Plot samples to get a first look at concentrations 
+#group the data for plotting
+data_plotting_all <- data_plotting %>%
+  group_by(Zone, Site) %>%
+  mutate(row_num = factor(row_number())) %>%  # create row_num as factor per group
+  ungroup()
+
+# data_plotting_all$Date <- as.Date(paste(data_plotting_all$Year, data_plotting_all$Month, data_plotting_all$Day, sep = "-"))
+
+
+#Plot data and change colors based on Zone:
+viz_ch4_plot <- ggplot(data_plotting_all, aes(x = row_num, y = ch4_lin_flux.estimate, fill = Zone)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "total")) +
+  facet_wrap( ~ Site, scales="free") +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42"
+  )) +
+  theme_classic() +
+  labs(x = " ", y = "CH4", title = "CH4 Fluxes by Site") +
+  theme(
+    panel.spacing = unit(.05, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) + 
+  theme(text = element_text(size = 30)) + 
+  theme(axis.text.x = element_blank())
+
+ viz_ch4_plot
+ 
+ viz_co2_plot <- ggplot(data_plotting_all, aes(x = row_num, y = co2_lin_flux.estimate, fill = Zone)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "total")) +
+  facet_wrap( ~ Site, scales="free") +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42"
+  )) +
+  theme_classic() +
+  labs(x = " ", y = "CO2", title = "CO2 Fluxes by Site") +
+  theme(
+    panel.spacing = unit(.05, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) + 
+  theme(text = element_text(size = 30)) + 
+  theme(axis.text.x = element_blank())
+
+ viz_co2_plot
+
+
+```
+
+## Boxplot summary by Date
+
+```{r Overall Boxplot by Date, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 300}
+
+data_plotting_all <- data_plotting_all %>% 
+    mutate(
+    Zone_1 = case_when(
+      Zone == "UP" ~ "Upland",
+      Zone == "TR" ~ "Transition",
+      TRUE ~ Zone  # keep everything else unchanged
+    )
+  ) %>%
+  mutate(Zone_1 = factor(Zone_1, levels = c("Upland", "Transition"))) %>%
+  mutate(TIMESTAMP=as.POSIXct(TIMESTAMP))%>%
+  mutate(Date = paste0(format(TIMESTAMP, "%Y"), format(TIMESTAMP, "%m")))
+
+
+##Summarize by Date, Site, and Zone
+viz_ch4_boxplot <- ggplot(data_plotting_all, aes(x = Date, y = ch4_lin_flux.estimate, fill = Zone_1)) +
+  geom_boxplot() + 
+  facet_wrap( ~ Site, scales = "free", nrow = 2) +
+  scale_x_discrete(drop = TRUE) +
+  scale_fill_manual(values = c(
+    "Upland" = "#20063B",
+    "Transition" = "#FFBC42"), 
+  labels = c("Upland", "Transition")) +
+  theme_classic() +
+  labs(x = " ", y = "CH4", title = "Summary Boxplot of CH4 by Site and Zone") +
+  theme(
+    panel.spacing = unit(0.5, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))+ 
+  theme(text = element_text(size = 30))+
+  theme(axis.ticks.x = element_line(linewidth = 1))+
+  theme(axis.ticks.length.x = unit(0.25, "cm"))
+  
+
+viz_ch4_boxplot
+
+
+##Summarize by Date, Site, and Zone
+viz_co2_boxplot <- ggplot(data_plotting_all, aes(x = Date, y = co2_lin_flux.estimate, fill = Zone_1)) +
+  geom_boxplot() + 
+  facet_wrap( ~ Site, scales = "free", nrow = 2) +
+  scale_x_discrete(drop = TRUE) +
+  scale_fill_manual(values = c(
+    "Upland" = "#20063B",
+    "Transition" = "#FFBC42"), 
+  labels = c("Upland", "Transition")) +
+  theme_classic() +
+  labs(x = " ", y = "CO2", title = "Summary Boxplot of CO2 by Site and Zone") +
+  theme(
+    panel.spacing = unit(0.5, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))+ 
+  theme(text = element_text(size = 30))+
+  theme(axis.ticks.x = element_line(linewidth = 1))+
+  theme(axis.ticks.length.x = unit(0.25, "cm"))
+
+viz_co2_boxplot
+
+
+```
+
+## Boxplot summary by Site
+
+```{r Overall Boxplot, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 300}
+
+##Summarize NPOC by Date, Site, and Zone
+viz_ch4_summary_boxplot <- ggplot(data_plotting_all, aes(x = Zone_1, y = ch4_lin_flux.estimate, fill = Zone_1)) +
+  geom_boxplot() + 
+  facet_wrap( ~ Site, scales = "free", nrow = 1) +
+  scale_x_discrete(drop = TRUE) +
+  scale_fill_manual(values = c(
+    "Upland" = "#20063B",
+    "Transition" = "#FFBC42"), 
+    labels = c("Upland", "Transition")) +
+  theme_classic() +
+  labs(x = " ", y = "CH4", title = "Summary Boxplot of CH4 by Site and Zone") +
+  theme(
+    panel.spacing = unit(0.5, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))+ 
+  theme(text = element_text(size = 30))+
+  theme(axis.ticks.x = element_line(linewidth = 1))+
+  theme(axis.ticks.length.x = unit(0.25, "cm"))
+
+viz_ch4_summary_boxplot
+
+
+##Summarize TDN by Date, Site, and Zone
+viz_co2_summary_boxplot <- ggplot(data_plotting_all, aes(x = Zone_1, y = co2_lin_flux.estimate, fill = Zone_1)) +
+  geom_boxplot() + 
+  facet_wrap( ~ Site, scales = "free", nrow = 1) +
+  scale_x_discrete(drop = TRUE) +
+  scale_fill_manual(values = c(
+    "Upland" = "#20063B",
+    "Transition" = "#FFBC42"), 
+    labels = c("Upland", "Transition")) +
+  theme_classic() +
+  labs(x = " ", y = "CO2", title = "Summary Boxplot of CO2 by Site and Zone") +
+  theme(
+    panel.spacing = unit(0.5, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))+ 
+  theme(text = element_text(size = 30))+
+  theme(axis.ticks.x = element_line(linewidth = 1))+
+  theme(axis.ticks.length.x = unit(0.25, "cm"))
+
+viz_co2_summary_boxplot
+
+
+```
+
+## Calculate summary metrics
+
+```{r Additional summary metrics, include=FALSE, dpi = 300}
+
+##Metrics for each site and zone for all depths and years
+summary <- data_plotting_all %>%
+  group_by(Site, Zone_1) %>%
+   reframe(
+     min_ch4 = min(ch4_lin_flux.estimate, na.rm=TRUE),
+     max_ch4 = max(ch4_lin_flux.estimate, na.rm=TRUE), 
+     mean_ch4 = mean(ch4_lin_flux.estimate, na.rm=TRUE), 
+     sd_ch4 = sd(ch4_lin_flux.estimate, na.rm=TRUE), 
+
+     min_co2 = min(co2_lin_flux.estimate, na.rm=TRUE),
+     max_co2 = max(co2_lin_flux.estimate, na.rm=TRUE), 
+     mean_co2 = mean(co2_lin_flux.estimate, na.rm=TRUE), 
+     sd_co2 = sd(co2_lin_flux.estimate, na.rm=TRUE))
+```
+
+## Summary Tables
+
+```{r Summary table metrics, echo = FALSE, message = FALSE, dpi = 100}
+
+kable(
+  summary[, c("Site", "Zone_1", "min_ch4",	"max_ch4",	"mean_ch4", "min_co2",	"max_co2",	"mean_co2")],  
+  format = "latex",
+  booktabs = TRUE,
+  caption = "Summary Statistics"
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "striped", "scale_down"),
+    font_size = 12
+  ) %>%
+  row_spec(0, bold = TRUE) %>%   # header
+  column_spec(1, bold = TRUE)
+
+
+```
