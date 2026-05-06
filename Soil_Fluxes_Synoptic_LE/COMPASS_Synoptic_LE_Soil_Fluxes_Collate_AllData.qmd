@@ -32,7 +32,8 @@ dat22 <- read.csv("2022/COMPASS_SynopticLE_Soil_Fluxes_2022.csv")
 # head(dat22)
 
 #read in 2023 Dionex Data:
-dat23 <- read.csv("2023/COMPASS_SynopticLE_Soil_Fluxes_2023.csv")
+dat23 <- read.csv("2023/COMPASS_SynopticLE_Soil_Fluxes_2023.csv")%>%
+          rename(Plot_ID=Plot)
 # head(dat23)
 
 all_dat <- bind_rows(dat22, dat23)
