@@ -1,10 +1,12 @@
 ---
 title: "COMPASS_Synoptic_LE_SoilFluxes_2022_CO2"
 author: "Roberta Peixoto "
-date: "2026-04-01"
-output: 
-  html_document:
-    self_contained: true
+date: today
+format:
+  pdf:
+    toc: true
+    number-sections: true
+output-dir: "2022/PDF"
 ---
 ## Goals of this code: 
 1.	Reads in raw smart chamber
@@ -40,11 +42,12 @@ library(dplyr)
 library(tidyr)
 library(tidyverse)
 library(stringr)
+library(kableExtra)
 
 ```
 
 ## Pull in Smart Chamber Files from the Raw Data folder
-```{r, message=FALSE, warning = FALSE, results ='hide'}
+```{r, message=FALSE, warning = FALSE, results ='hide', echo=FALSE}
 
 # Create a temporary directory
 tmp_dir <- tempdir()
@@ -82,12 +85,10 @@ alldat <- data.table::rbindlist(alldat1, fill = TRUE)
 ## Noticed that the site names were recorded in the file name and not in the flux label for 2022 
 ## dealing with it in the next chunk 
 
-
-
 ```
 
 ## Unfortunatly - we had many problems with labels - we need to include the sites in the Plot_ID
-```{r}
+```{r, echo=FALSE}
 # 1. Table describing the days we have visited each site
 site_lookup <- tibble::tribble(
   ~Date,         ~Site,
@@ -151,7 +152,7 @@ alldat <- alldat%>%filter(!label %in% c("UpDemonstration",
 ```
 
 ## Create a unique Plot_ID, check if there is a meta-data file, if not, create a meta-data file
-```{r}
+```{r, echo=FALSE}
 
 ############### only run this first part if you don't already have a meta-data file 
         #because if you do then all the data for each one will have a plot and you won't be able to change start times
@@ -222,7 +223,7 @@ if (file.exists(file_path)) {
 ```
 
 ## Mark fluxes that were retaken - this is the first issue! Need to get all but last flux to be TRUE for drop - fieldnotes with explanation for flux retaken - usually weird zeros, Steven probe not inserted in the soil, or label mistake  
-```{r}
+```{r, echo=FALSE}
 
 # fluxes that were retaken have similar names with a letter after it 
 metadata_filtered <- metadata %>%
@@ -264,7 +265,7 @@ metadata_filtered <- metadata_filtered %>%
 ##Dont need to pull L1 temp data or any other temps like we do for macrophyte because the smartchamber records the temp
 
 ## Match up the metadata to the rest of the data   
-```{r}
+```{r, echo=FALSE}
 #remove any metadata rows that have NAs for the PlotID
 metadata_filtered  <- metadata_filtered %>%
   filter(!is.na(Plot_ID)) %>%
@@ -323,9 +324,9 @@ alldat <- alldat %>%
 ```
 
 ## fixing some Deadbands  
-```{r}
+```{r, echo=FALSE}
 # Table of plots with custom deadband adjustments
-deadband_overrides <- tibble::tibble(
+time_overrides <- tibble::tibble(
   Plot_ID = c(
     "2022_08_16_CRC_W_43_1",
     "2022_08_17_OWC_TR_64_1",
@@ -351,96 +352,104 @@ deadband_overrides <- tibble::tibble(
     13,
     10
     
-  )
+  ),
+  stop_offset_secs = NA_real_   #reduce 202_07_20_CRC_W_43_1 to 52sec; for 202_07_08_CRC_W_44_2 to 46sec
 )
 
-# Default deadband
-alldat <- alldat %>%
-  mutate(DeadBand_used = DeadBand) 
-
-# Apply per-plot overrides
-alldat <- alldat %>%
-  left_join(deadband_overrides, by = "Plot_ID") %>%
+#apply new incubation period
+alldat_trimmed <- alldat %>%
+  left_join(time_overrides, by = "Plot_ID") %>%
+  group_by(Plot_ID) %>%
   mutate(
-    DeadBand_used = if_else(
+    t_start_original = min(TIMESTAMP),
+    t_end_original   = max(TIMESTAMP),
+    
+    # deadband manual or metadat
+    t_start_adjusted = if_else(
       !is.na(DeadBand_override),
-      DeadBand_override,
-      DeadBand_used
+      t_start_original + DeadBand_override,
+      t_start_original + as.numeric(coalesce(first(DeadBand), 0))
+    ),
+    
+    # new offset 
+    t_end_adjusted = if_else(
+      !is.na(stop_offset_secs),
+      t_end_original + stop_offset_secs,
+      t_end_original
     )
   ) %>%
-  select(-DeadBand_override)
+  filter(TIMESTAMP >= t_start_adjusted,   
+         TIMESTAMP <= t_end_adjusted) %>% 
+  ungroup() %>%
+  select(-t_start_original, -t_end_original, 
+         -t_start_adjusted, -t_end_adjusted,
+         -DeadBand_override,-stop_offset_secs)
 
 ```
 
+##Extracting initial CO2 concentration
+```{r, echo=FALSE}
+
+## Extract initial concentration (t0) for each Plot for QAQC later
+#saving df to use after flux calculation
+df_CO2_in <- alldat_trimmed %>%
+  arrange(Plot_ID, TIMESTAMP) %>%
+  group_by(Plot_ID) %>%
+  summarise(CO2_initial = first(co2), .groups = "drop")  
+
+```
 
 ## Change the units from ppb to nmol  
 ```{r}
 #change the units
-alldat$CO2_umol <- ffi_ppb_to_nmol(alldat$co2, 
-                                volume = (alldat$TotalVolume_fixed_cm3 / 1000000), # have to divide to get to m3
-                                temp = alldat$chamber_t)    # degrees C
+alldat_trimmed$CO2_umol <- ffi_ppb_to_nmol(alldat_trimmed$co2, 
+                                volume = (alldat_trimmed$TotalVolume_fixed_cm3 / 1000000), # have to divide to get to m3
+                                temp = alldat_trimmed$chamber_t)    # degrees C
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat$CO2_umol_m2 <- alldat$CO2_umol / 0.0318 #adjust for the area 
+alldat_trimmed$CO2_umol_m2 <- alldat_trimmed$CO2_umol / 0.0318 #adjust for the area 
 
 
 ```
 
 ## Calculate fluxes
-```{r, message=FALSE, warning = FALSE, results ='hide'}
-
-#need to create a new line that would say only calculate the flux if the drop column is false
-alldat_dropped<-alldat%>%filter(drop!=TRUE)
+```{r, message=FALSE, warning = FALSE, results ='hide', echo=FALSE}
 
 #selecting the base id to include in the flux df later
-plot_base_lookup <- alldat_dropped%>%
+plot_base_lookup <- alldat_trimmed%>%
   select(Plot_ID, base_id)%>% 
   filter(!is.na(base_id)) %>%   
   distinct(Plot_ID, .keep_all = TRUE)
 
 
 #calculate fluxes for all other sites 
-fluxes <- ffi_compute_fluxes(alldat_dropped,
+fluxes <- ffi_compute_fluxes(alldat_trimmed,
                              group_column = "Plot_ID", 
                              time_column = "TIMESTAMP", 
                              gas_column = "CO2_umol_m2", 
-                             dead_band = "DeadBand_used"
+                             dead_band = "DeadBand"
                              )
 head(fluxes)
 #including the unique ID 
-fluxes <- fluxes %>%
-  left_join(plot_base_lookup, by = "Plot_ID")
+#fluxes <- fluxes %>%
+#  left_join(plot_base_lookup, by = "Plot_ID")
 
 ##Create a dataframe with averaged soil probe data per Plot and add to flux data
-soildat <- alldat %>% 
+soildat <- alldat_trimmed%>% 
     group_by(Plot_ID) %>%
   dplyr::summarize(
      soilp_c = mean(soilp_c, na.rm=TRUE),
      soilp_m = mean(soilp_m, na.rm=TRUE),
      soilp_t = mean(soilp_t, na.rm=TRUE))
 
-alldf <- left_join(fluxes, soildat, by = "Plot_ID")
-
-fluxes_neg <- as.data.frame(subset(alldf, lin_flux.estimate < 0, select = Plot_ID:TIMESTAMP_max))
-
-(print(fluxes_neg))
-
-allflux <-alldf%>%filter(lin_flux.estimate > 0)
-
-# saving a negative CO2 flux table to remove int he CH4 flux script
-drop_neg_CO2 <- alldf %>%
-  filter(lin_flux.estimate < 0) %>%
-  select(Plot_ID, TIMESTAMP_min, TIMESTAMP_max) %>%
-  mutate(drop_CO2 = TRUE)
-
-saveRDS(drop_neg_CO2, "drop_neg_CO2_2022.rds")
+allflux <- left_join(fluxes, soildat, by = "Plot_ID")
 
 ```
 
 
 ## Visualize fluxes and sort by r2 
-```{r}
+```{r, echo=FALSE}
 
 #take a look at the fluxes we calculated with R2 
 ggplot(allflux, aes(Plot_ID, lin_flux.estimate, color = lin_r.squared)) +
@@ -471,46 +480,67 @@ tails <- rbind(fluxes_low, fluxes_high)
 ```
 
 ## check the fluxes for which I changed the start time due to lags or ebullition (recorded in notes of metadata)
-```{r}
+```{r, echo=FALSE}
 
-#### If something is in a V shape should we take the second part to make a positive linear curve?
 
-# Subset data and create relative time (seconds since flux start)
+# grab trim limits for each overridden Plot
+trim_limits <- alldat_trimmed %>%
+  filter(Plot_ID %in% time_overrides$Plot_ID) %>%
+  group_by(Plot_ID) %>%
+  summarise(
+    t_start_trim = min(TIMESTAMP),
+    t_end_trim   = max(TIMESTAMP),
+    .groups = "drop"
+  )
+
+# use full alldat + trim limits to classify each point
 r_all <- alldat %>%
-  filter(Plot_ID %in% deadband_overrides$Plot_ID) %>%
+  filter(Plot_ID %in% time_overrides$Plot_ID) %>%
+  left_join(trim_limits, by = "Plot_ID") %>%
   group_by(Plot_ID) %>%
   mutate(
-    time_sec = as.numeric(
-      difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")
+    time_sec = as.numeric(difftime(TIMESTAMP, min(TIMESTAMP), units = "secs")),
+    point_status = case_when(
+      TIMESTAMP < t_start_trim ~ "Discarded (DeadBand)",
+      TIMESTAMP > t_end_trim   ~ "Discarded (stop trim)",
+      TRUE                     ~ "Used"
     )
   ) %>%
   ungroup()
 
+# ---- PLOTTING: one plot per Plot_ID (PDF friendly) ----
 
-# Random sample of plots for visualization
-plots_sample <- sample(unique(r_all$Plot_ID), 6,replace = FALSE)
+plot_ids <- unique(r_all$Plot_ID)
 
-r_plot <- r_all %>%
-  filter(Plot_ID %in% plots_sample)
+for (P in plot_ids) {
 
-# Plot
-ggplot(
-  r_plot,
-  aes(
-    x = TIMESTAMP,
-    y = co2,
-    color = time_sec >= DeadBand_used
-  )
-) +
-  geom_point(size = 1.8) +
-  facet_wrap(~ Plot_ID, scales = "free", ncol = 2) +
-  scale_color_manual(
-    values = c("grey60", "red"),
-    labels = c("Discarded (deadband)", "Used after deadband")
+  p <- ggplot(
+    r_all %>% filter(Plot_ID == P),
+    aes(x = TIMESTAMP, y = co2, color = point_status)
   ) +
-  theme_classic() +
-  ylab(expression(paste(CO[2], " (ppm)"))) +
-  xlab("Time")
+    geom_point(size = 1.8) +
+    scale_color_manual(
+      values = c(
+        "Used"                  = "#E41A1C",
+        "Discarded (DeadBand)"  = "grey60",
+        "Discarded (stop trim)" = "grey20"
+      )
+    ) +
+    theme_classic(base_size = 12) +
+    ylab(expression(paste(CO[2], " (ppm)"))) +
+    xlab("Time") +
+    labs(
+      title = paste("Incubation Period Adjustments:", P),
+      color = "Point Status"
+    ) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(face = "bold")
+    )
+
+  print(p)   # IMPORTANT: each print() = new page in PDF
+}
+
 
 ```
 
@@ -527,7 +557,7 @@ good_sample <- sample(good_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in good_sample){ 
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(as.POSIXct(TIMESTAMP), co2)) + geom_point() + 
   scale_x_datetime(breaks = "15 sec") + 
   theme_classic() +
@@ -554,7 +584,7 @@ low_sample <- sample(low_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in low_sample){ 
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, co2)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -606,7 +636,7 @@ tail_sample <- sample(tail_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above 
 for(P in tail_sample){ 
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, co2)) + geom_point() + theme_classic() + 
   scale_x_datetime(breaks = "15 sec") + 
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -635,7 +665,7 @@ all_sample <- sample(all_plots, 5, replace=FALSE)
 
 #Loop to run five random plots subset above
 for(P in all_sample){
-  r1 <- subset(alldat, Plot_ID == P & !is.na(metadat_row))
+  r1 <- subset(alldat_trimmed, Plot_ID == P & !is.na(metadat_row))
   p1 <- ggplot(r1, aes(TIMESTAMP, co2)) + geom_point() + theme_classic() +
   scale_x_datetime(breaks = "15 sec") +
   ylab(expression(paste( CO [2], " (ppm)"))) +
@@ -647,25 +677,153 @@ for(P in all_sample){
 ####################
 ```
 
+## QAQC - Flags
 
-## Remove any fluxes that do not fit criteria 
 ```{r, echo=FALSE}
 
-# Create a new dataframe by removing rows that were present in fluxes_weird (11 obs)
-#allflux_filtered <- allflux[!(allflux$Plot_ID %in% fluxes_weird$Plot_ID), ] # not all of them are bad, so I am removing below the ones we visually confirmed that were bad
+ #Adding CO2 intital per Plot 
+ allflux<- allflux %>%
+  left_join(df_CO2_in, by = "Plot_ID") 
 
-#Any others that are not in the weird category that need to be removed: 
-  #also removing ones that are crazy off but were not in the fluxes_weird dataframe 
+# QAQC flags 
+fluxes_flagged <- allflux %>%
+  mutate(
+    # model fit flags
+    CO2_lin_pass  = (lin_r.squared  >= 0.85 | lin_RMSE  < 5) & !is.na(lin_r.squared),
+    CO2_HM81_pass = (HM81_r.squared >= 0.85 | HM81_RMSE < 5) & !is.na(HM81_r.squared),
+    CO2_poly_pass = (poly_r.squared >= 0.85 | poly_RMSE < 5) & !is.na(poly_r.squared),
+    # initial conc flag (CH4 initial conc)
+    CO2_init_conc        = CO2_initial > 600 | is.na(lin_flux.estimate),
+    # negative flux flag
+    CO2_neg_flux       = lin_flux.estimate < 0 | is.na(lin_flux.estimate),
+    # rejection flags
+    CO2_rejected_model  = !(CO2_lin_pass | CO2_HM81_pass | CO2_poly_pass),
+    CO2_rejected_negflux = CO2_neg_flux,
+    CO2_flux_rejected   = CO2_rejected_model | CO2_rejected_negflux
+  )
 
-allflux_filtered <- allflux %>%
-  filter(!Plot_ID %in% c("2022_09_23_PTR_TR_9_1", #leak 
+# percentage of problems
+r2_summary <- fluxes_flagged %>%
+  summarise(
+    CO2_total_obs          = n(),
+    CO2_n_rejected_model   = sum(CO2_rejected_model,   na.rm = TRUE),
+    CO2_n_rejected_negflux = sum(CO2_rejected_negflux, na.rm = TRUE),
+    CO2_n_rejected_both    = sum(CO2_rejected_model & CO2_rejected_negflux, na.rm = TRUE),
+    CO2_n_rejected_total   = sum(CO2_flux_rejected,    na.rm = TRUE),
+    CO2_pct_rejected_total = 100 * CO2_n_rejected_total / CO2_total_obs,
+    CO2_n_rejected_init_conc =  sum(CO2_init_conc,    na.rm = TRUE),       
+    CO2_perct_init_conc    = 100 * CO2_n_rejected_init_conc / CO2_total_obs,
+    CO2_n_lin_pass         = sum(CO2_lin_pass,  na.rm = TRUE),
+    CO2_n_HM81_pass        = sum(CO2_HM81_pass, na.rm = TRUE),
+    CO2_n_poly_pass        = sum(CO2_poly_pass, na.rm = TRUE)
+  )
+
+# formatted table for PDF
+r2_summary %>%
+ tidyr::pivot_longer(everything(), names_to = "Metric", values_to = "Value") %>%
+  mutate(
+    Metric = recode(Metric,
+      CO2_total_obs          = "Total observations",
+      CO2_n_rejected_init_conc = "Rejected - [CO2] (n)" ,
+      CO2_perct_init_conc    = "Rejected — [CO2] (%)",
+      CO2_n_rejected_model   = "Rejected — poor model fit (n)",
+      CO2_n_rejected_negflux = "Rejected — negative CO2 flux (n)",
+      CO2_n_rejected_both    = "Rejected — both reasons (n)",
+      CO2_n_rejected_total   = "Rejected — total (n)",
+      CO2_pct_rejected_total = "Rejected — total (%)",
+      CO2_n_lin_pass         = "Passed — Linear model (n)",
+      CO2_n_HM81_pass        = "Passed — HM81 model (n)",
+      CO2_n_poly_pass        = "Passed — Polynomial model (n)"
+    ),
+    Value = ifelse(Metric == "Rejected — total (%)",
+                   round(Value, 1),
+                   as.integer(Value)) ) %>%
+  kable(
+    caption  = "QA/QC CO2 Flux Summary",
+    align    = c("l", "r"),
+    booktabs = TRUE,
+    format   = "latex") %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position"),
+    full_width    = FALSE ) %>%
+  pack_rows("Rejections",        2, 8) %>%
+  pack_rows("Model performance", 9, 11)
+
+# R² vs RMSE diagnostic plot
+# pivot_longer keeps R²/RMSE columns and uses CH4_*_pass as the pass indicator
+set.seed(42)
+plot_data <- fluxes_flagged %>%
+  slice_sample(n = min(15000, nrow(.))) %>%
+  select(
+    lin_r.squared,  lin_RMSE,  CO2_lin_pass,
+    HM81_r.squared, HM81_RMSE, CO2_HM81_pass,
+    poly_r.squared, poly_RMSE, CO2_poly_pass,
+    CO2_rejected_negflux
+  ) %>%
+  # rename pass columns to match model prefix before pivoting
+  rename(
+    lin_pass  = CO2_lin_pass,
+    HM81_pass = CO2_HM81_pass,
+    poly_pass = CO2_poly_pass
+  ) %>%
+  pivot_longer(
+    cols = -CO2_rejected_negflux,
+    names_to  = c("model", ".value"),
+    names_pattern = "(lin|HM81|poly)_(.*)"
+  ) %>%
+  rename(r2 = r.squared) %>%
+  mutate(
+    model  = recode(model, lin = "Linear", HM81 = "HM81", poly = "Polynomial"),
+    status = case_when(
+      CO2_rejected_negflux ~ "Negative CO2",
+      pass                 ~ "Accepted",
+      TRUE                 ~ "Rejected"
+    )
+  ) %>%
+  filter(!is.na(r2), !is.na(RMSE))
+
+#graphing
+QAQC_plot <- ggplot(plot_data, aes(x = r2, y = RMSE, color = model, shape = status)) +
+  geom_point(size = 2) +
+  geom_vline(xintercept = 0.85, linetype = "dashed", color = "black", linewidth = 0.8) +
+  geom_hline(yintercept = 5,    linetype = "dashed", color = "black", linewidth = 0.8) +
+  annotate("text", x = 0.7, y = max(plot_data$RMSE, na.rm = TRUE) * 0.95,
+           label = "R² = 0.85", hjust = -0.1, size = 3.5, fontface = "bold") +
+  annotate("text", x = 0.1, y = 5,
+           label = "RMSE = 5", vjust = -0.5, size = 3.5, fontface = "bold") +
+  scale_color_manual(values = c(
+    "Linear"     = "#E41A1C",
+    "HM81"       = "#377EB8",
+    "Polynomial" = "#4DAF4A"
+  )) +
+  scale_shape_manual(values = c(
+    "Accepted"     = 16,
+    "Rejected"     = 4,
+    "Negative CO2" = 17 )) +
+  labs(
+    title = "R² vs RMSE — CO2 Flux QA/QC",
+    x     = "R²",
+    y     = "RMSE",
+    color = "Model",
+    shape = "Status"  ) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "right")
+
+print(QAQC_plot)
+```
+
+## Adding manual flag to reject any fluxes that do not fit criteria
+```{r, echo=FALSE}
+
+# adding manual flags to the ones that are crazy off based on visual checks
+manual_reject <- c("2022_09_23_PTR_TR_9_1", #leak 
                          "2022_07_07_PTR_TR_9_1", #leak
-                         "2022_07_08_CRC_TR_36_1" #plateau + sharp increase - soil disturbed during measurement?
-                      ))
-
-
-# View the result
-head(allflux_filtered)
+                         "2022_07_08_CRC_TR_36_1") #plateau + sharp increase - soil disturbed during measurement?
+ 
+fluxes_flagged <- fluxes_flagged %>%
+  mutate(
+    CO2_rejected_manual  = Plot_ID %in% manual_reject,
+    CO2_flux_rejected   = CO2_rejected_model | CO2_rejected_negflux |CO2_rejected_manual)
 
 
 ```
@@ -674,7 +832,7 @@ head(allflux_filtered)
 ## Do some visualization of QAQC plots to assess fluxes  
 ```{r, echo=FALSE}
 
-p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)) +
+p1 <- ggplot(fluxes_flagged, aes(lin_flux.estimate, rob_flux.estimate, color = Plot_ID)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   labs(title = "A") + 
@@ -688,7 +846,7 @@ p1 <- ggplot(allflux_filtered, aes(lin_flux.estimate, rob_flux.estimate, color =
         aspect.ratio = 1)
 p1
 
-p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
+p2 <- ggplot(fluxes_flagged, aes(lin_r.squared, poly_r.squared, color = Plot_ID)) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   xlim(0,1) + ylim(0,1) +
@@ -703,7 +861,7 @@ p2 <- ggplot(allflux_filtered, aes(lin_r.squared, poly_r.squared, color = Plot_I
         aspect.ratio = 1)
 p2
 
-p3 <- ggplot(allflux_filtered, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
+p3 <- ggplot(fluxes_flagged, aes(lin_flux.estimate, HM81_flux.estimate, color = lin_r.squared )) +
   geom_point(size=4) + geom_abline() + 
   theme_classic() + 
   #xlim(0,50) + #ylim(0,50) +
@@ -725,7 +883,7 @@ p3
 ## Read out final dataframe and export for use elsewhere 
 ```{r, echo=FALSE}
 
-allflux_filtered_renamed <- allflux_filtered %>%
+allflux_renamed <- fluxes_flagged %>%
     separate(
     Plot_ID,
     into = c("Year", "Month_num", "Day", "Site", "Zone", "Rest"),
@@ -748,12 +906,12 @@ allflux_filtered_renamed <- allflux_filtered %>%
   select(
     RepNumber, Month, Site, Zone, Replicate, Plot,
     everything(),
-    -Year, -Day, -Month_num, -Rest, -base_id
+    -Year, -Day, -Month_num, -Rest
   )
 
 
 #export as a csv to the folder that you want 
-write.csv(allflux_filtered_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2022_CO2.csv", row.names = FALSE) 
+write.csv(allflux_renamed, file="Processed Data/COMPASS_Synoptic_LE_SmartChamber_Fluxes_Final_2022_CO2.csv", row.names = FALSE) 
 #Change file name
 
 
