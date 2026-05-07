@@ -91,6 +91,8 @@ alldat <- data.table::rbindlist(alldat1, fill = TRUE)
 
 ## Unfortunatly - we had many problems with labels - we need to include the sites in the Plot_ID
 ```{r, echo = FALSE}
+## Unfortunatly - we had many problems with labels - we need to include the sites in the Plot_ID
+
 # Table describing the days we have visited each site
 site_lookup <- tibble::tribble(
   ~Date,         ~Site,
@@ -127,7 +129,8 @@ site_lookup <- tibble::tribble(
 
 # alldat  - date formatting
 alldat <- alldat %>%
-  mutate(Date = as.Date(TIMESTAMP))%>%filter(lubridate::year(Date) == 2023)%>%
+  mutate(Date = as.Date(TIMESTAMP)) %>%
+  filter(lubridate::year(Date) == 2023) %>%
   left_join(site_lookup, by = "Date")
 
 # Fixing label code problems 
@@ -139,8 +142,8 @@ alldat <- alldat %>%
   ## Normalize the raw label (do NOT trust embedded site)
   mutate(
     label = label %>%
-      str_remove_all("[sSeE]") %>%          # remove stray s/e
-      str_replace_all("-", "_") %>%         # standardize separators
+      str_remove_all("[sSeE]") %>%       # remove stray s/e
+      str_replace_all("-", "_") %>%      # standardize separators
       str_replace_all(c(
         "[Ww][tT]"     = "W",
         "[Tt][Rr][a]?" = "TR",
@@ -148,8 +151,8 @@ alldat <- alldat %>%
         "[Ww][lL]"     = "W",
         "[w]"          = "W"
       )) %>%
-      ## ensure ZONE_NUMBER format (W46 → W_46, TR34 → TR_34)
-      str_replace("_(W|TR|UP)(\\d)", "_\\1_\\2") %>%
+      # <<< FIX >>> ensure ZONE_NUMBER format everywhere (TR31 → TR_31, _TR31 → _TR_31)
+      str_replace_all("(TR|UP|W)(\\d)", "\\1_\\2") %>%
       ## separate suffix from number (48a → 48_a)
       str_replace("(\\d+)([A-Za-z])$", "\\1_\\2")
   ) %>%
@@ -159,7 +162,7 @@ alldat <- alldat %>%
     label_core = str_remove(label, "^(CRC|OWC|PTR)_?")
   ) %>%
 
-  ## Rebuild label using ONLY the site from site_lookup  #OWC recorded wrongly on 2023-Jan-12 instead of PTR
+  ## Rebuild label using ONLY the site from site_lookup
   mutate(
     label = paste0(Site, "_", label_core)
   ) %>%
@@ -182,52 +185,32 @@ alldat <- alldat %>%
   ## Final cleanup
   select(-label_core, -n_underscores, -suffix)
 
-#I have to change labels that were recorded wrong - tracked in the field notes
-
-# CRC 02-21-2023 TR 36 -> recorded as W but it is a TR sample
-# CRC 02-21-2023 TR 37 -> recorded as W but it is a TR sample
-# CRC 02-21-2023 TR 38 -> recorded as UP but it is a TR sample
-# CRC 02-21-2023 TR 40 -> recorded as UP but it is a TR sample
-# CRC 03-24-2023 W 48 -> recorded as TR but it is a W sample
-
-# CRC 10-06-2023 TR 37 -> recorded as UP but it is a TR sample
-# CRC 10-06-2023 TR 39 -> recorded as UP but it is a TR sample
-# CRC 10-06-2023 TR 40 -> recorded as UP but it is a TR sample
-
-# OWC 04-21-2023 TR 58 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 60 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 61 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 63 -> recorded as UP but it is a TR sample
-# OWC 04-21-2023 TR 64 -> recorded as UP but it is a TR sample
-
-#extracting the collar number from the label
+# ------------------------------------------------------------------
+# Extract collar number from the FIXED label
 alldat <- alldat %>%
   mutate(
-    PlotNum = as.integer(stringr::str_extract(label, "(?<=_)\\d+(?=(_|$))"))
+    PlotNum = as.integer(str_extract(label, "(?<=_)\\d+(?=(_|$))"))
   )
 
-#correcting the zone that was saved wrongly
-
+# ------------------------------------------------------------------
+# Correct zones saved wrongly in the field
 alldat <- alldat %>%
-  mutate( label = case_when(
-      # CRC 02-21-2023 — TR was saved wrongly as W
+  mutate(
+    label = case_when(
       Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(36, 37) ~
-        stringr::str_replace(label, "_W_", "_TR_"),
+        str_replace(label, "_W_", "_TR_"),
 
       Site == "CRC" & Date == as.Date("2023-02-21") & PlotNum %in% c(38, 40) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
+        str_replace(label, "_UP_", "_TR_"),
 
-      # CRC 03-24-2023 — W was saved wrongly as TR
       Site == "CRC" & Date == as.Date("2023-03-24") & PlotNum == 48 ~
-        stringr::str_replace(label, "_TR_", "_W_"),
+        str_replace(label, "_TR_", "_W_"),
 
-      # CRC 10-06-2023 — TR was saved wrongly as UP
       Site == "CRC" & Date == as.Date("2023-10-06") & PlotNum %in% c(37, 39, 40) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
-      
-      # OWC 04-21-2023 — UP was saved wrongly as TR
+        str_replace(label, "_UP_", "_TR_"),
+
       Site == "OWC" & Date == as.Date("2023-04-21") & PlotNum %in% c(58, 60, 61, 63, 64) ~
-        stringr::str_replace(label, "_UP_", "_TR_"),
+        str_replace(label, "_UP_", "_TR_"),
 
       TRUE ~ label
     )
