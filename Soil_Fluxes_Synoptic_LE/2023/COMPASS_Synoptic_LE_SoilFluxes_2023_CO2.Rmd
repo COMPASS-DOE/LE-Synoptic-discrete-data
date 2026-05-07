@@ -128,9 +128,9 @@ site_lookup <- tibble::tribble(
 
 # alldat  - date formatting
 alldat <- alldat %>%
-  mutate(Date = as.Date(TIMESTAMP))%>%filter(lubridate::year(Date) == 2023)%>%
+  mutate(Date = as.Date(TIMESTAMP)) %>%
+  filter(lubridate::year(Date) == 2023) %>%
   left_join(site_lookup, by = "Date")
-
 
 # Fixing label code problems 
 alldat <- alldat %>%
@@ -141,8 +141,8 @@ alldat <- alldat %>%
   ## Normalize the raw label (do NOT trust embedded site)
   mutate(
     label = label %>%
-      str_remove_all("[sSeE]") %>%          # remove stray s/e
-      str_replace_all("-", "_") %>%         # standardize separators
+      str_remove_all("[sSeE]") %>%   # remove stray s/e
+      str_replace_all("-", "_") %>%  # standardize separators
       str_replace_all(c(
         "[Ww][tT]"     = "W",
         "[Tt][Rr][a]?" = "TR",
@@ -150,8 +150,8 @@ alldat <- alldat %>%
         "[Ww][lL]"     = "W",
         "[w]"          = "W"
       )) %>%
-      ## ensure ZONE_NUMBER format (W46 → W_46, TR34 → TR_34)
-      str_replace("_(W|TR|UP)(\\d)", "_\\1_\\2") %>%
+      ## FIX: ensure ZONE_NUMBER format everywhere (TR31 → TR_31, CRC_TR31 → CRC_TR_31)
+      str_replace_all("(TR|UP|W)(\\d)", "\\1_\\2") %>%
       ## separate suffix from number (48a → 48_a)
       str_replace("(\\d+)([A-Za-z])$", "\\1_\\2")
   ) %>%
@@ -161,7 +161,7 @@ alldat <- alldat %>%
     label_core = str_remove(label, "^(CRC|OWC|PTR)_?")
   ) %>%
 
-  ## Rebuild label using ONLY the site from site_lookup  #OWC recorded wrongly on 2023-Jan-12 instead of PTR
+  ## Rebuild label using ONLY the site from site_lookup
   mutate(
     label = paste0(Site, "_", label_core)
   ) %>%

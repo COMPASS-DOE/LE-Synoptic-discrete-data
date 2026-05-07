@@ -39,11 +39,17 @@ dat23 <- read.csv("2023/COMPASS_SynopticLE_Soil_Fluxes_2023.csv")%>%
 all_dat <- bind_rows(dat22, dat23)
 
 all_dat$X <- NULL
+
+all_dat_filtered<- all_dat%>%filter(!is.na(Replicate))
+
+#note:
+# 11 samples without replicate number will be filtered out here 
+# These samples were taken at PTR wet margin in 2022_11_08, outside the synoptic W, next to Lucie Stetten / Argonne Core sampling for https://doi.org/10.1016/j.scitotenv.2025.179878 
 ```
 
 \## Removing flags
 ```{r}
-all_dat_flagout<-all_dat%>%
+all_dat_flagout<-all_dat_filtered%>%
   filter(CO2_neg_flux==FALSE,
          CO2_rejected_manual==FALSE,
          !(CO2_rejected_model == TRUE &(co2_lin_RMSE > 5 |
