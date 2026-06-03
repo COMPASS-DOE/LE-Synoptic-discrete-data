@@ -12,12 +12,12 @@ output-dir: "2023/PDF"
 ## Add Required Packages
 
 ```{r packages, include = FALSE}
-lapply(c( "fluxfinder", "readxl",
+invisible(lapply(c( "fluxfinder", "readxl",
   "dplyr", "ggplot2", "ggpubr", "stringr",
   "purrr", "tidyverse", "here", "broom", "tibble",
   "googledrive", "googlesheets4", "data.table", 
   "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "kableExtra", "arrow"), 
-  library, character.only = TRUE)
+  library, character.only = TRUE))
 ```
 
 ## Pull in Raw Datafiles
