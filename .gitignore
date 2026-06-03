@@ -11,5 +11,5 @@
 .DS_Store
 
 # Data files
-Tree_Fluxes_Synoptic_LE/2022/*.zip
-Tree_Fluxes_Synoptic_LE/2023/*.zip
+Tree_Fluxes_Synoptic_LE/2022/Raw\ Data/*.zip
+Tree_Fluxes_Synoptic_LE/2023/Raw\ Data/*.zip
