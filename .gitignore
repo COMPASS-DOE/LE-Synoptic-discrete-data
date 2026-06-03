@@ -1,5 +1,11 @@
-.Rproj.user
+# R files
 .Rhistory
 .RData
 .Ruserdata
+
+# Posit files
+.Rproj.user
 .positai
+
+# OS files
+.DS_Store
