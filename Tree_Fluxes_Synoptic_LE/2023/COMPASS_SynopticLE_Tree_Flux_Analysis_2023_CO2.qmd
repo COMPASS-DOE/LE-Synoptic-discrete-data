@@ -15,7 +15,7 @@ output-dir: "2023/PDF"
 invisible(lapply(c( "fluxfinder", "readxl",
   "dplyr", "ggplot2", "ggpubr", "stringr",
   "purrr", "tidyverse", "here", "broom", "tibble",
-  "googledrive", "googlesheets4", "data.table", 
+  "googledrive", "googlesheets4",
   "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "kableExtra", "arrow"), 
   library, character.only = TRUE))
 ```
@@ -44,7 +44,7 @@ zip_files <- list.files(
   full.names = TRUE)
 
 message(now(), " | ZIP files found: ", length(zip_files))
-print(zip_files)
+print(basename(zip_files))
   if (length(zip_files) == 0) {
   stop("No ZIP files found. Check DATA_DIR_ROOT.")}
 
@@ -57,8 +57,7 @@ read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
     message("  -> Using cached version")
     return(cache[[zip_file]])  }
 
-  tmp_dir <- tempfile("li7810_")
-  dir.create(tmp_dir)
+  tmp_dir <- tempdir("li7810_")
   on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
   unzip(zip_file, exdir = tmp_dir)
   data_files <- list.files(
@@ -75,16 +74,17 @@ read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
     message("     Reading: ", basename(f))
     ffi_read_LI7810(f)})
 
-  dat <- data.table::rbindlist(dat_list, fill = TRUE) %>%
+  dat <- bind_rows(dat_list) %>%
     mutate(TIMESTAMP = with_tz(TIMESTAMP, tz))
   cache[[zip_file]] <<- dat
   message("  -> ZIP finished: ", basename(zip_file))
-  return(dat)}
+  return(dat)
+ }
 
 # ACTUAL EXECUTION 
 message(now(), " | Starting data read")
 alldat_list <- lapply(zip_files, read_li7810_zip)
-alldat <- data.table::rbindlist(alldat_list, fill = TRUE)
+alldat <- bind_rows(alldat_list, fill = TRUE)
 message(now(), " | DONE")
 message("Final number of rows: ", nrow(alldat))
 
