@@ -9,21 +9,33 @@ format:
 output-dir: "2023/PDF"
 ---
 
-## Add Required Packages
+## Load Required Packages
 
 ```{r packages, include = FALSE}
-invisible(lapply(c( "fluxfinder", "readxl",
-                    "dplyr", "ggplot2", "ggpubr", "stringr",
-                    "purrr", "tidyverse", "here", "broom", "tibble",
-                    "googledrive", "googlesheets4", "tibble",
-                    "matrixStats", "gridExtra", "grid", "tidyverse", "knitr", "kableExtra", "arrow"), 
-                 library, character.only = TRUE))
+# File reading
+library(here)
+library(fluxfinder)
+#library(readxl)
+# Data processing
+library(dplyr)
+library(lubridate)
+# Statistics
+library(broom)
+# Plotting
+library(ggplot2)
+#library(ggpubr)
+
+# invisible(lapply(c( "fluxfinder", "readxl",
+#                     "dplyr", "ggplot2", "ggpubr", "stringr",
+#                     "here", "broom", "tibble",
+#                     "matrixStats", "gridExtra", "grid", "knitr", "kableExtra", "arrow"), 
+#                  library, character.only = TRUE))
 ```
 
 ## Pull in Raw Datafiles
 
 ```{r}
-#defining where the raw data is
+# Defining where the raw data is
 
 DATA_DIR_ROOT <- here::here(
     "Tree_Fluxes_Synoptic_LE",
@@ -31,13 +43,11 @@ DATA_DIR_ROOT <- here::here(
     "Raw Data"
 )
 
-
-#function to read data
 now <- function() format(Sys.time(), "%Y-%m-%d %H:%M:%S")
 message(now(), " | Script started")
-#finding the zip files
-message(now(), " | Looking for ZIP files in: ", DATA_DIR_ROOT)
 
+# Find the zip files
+message(now(), " | Looking for ZIP files in: ", DATA_DIR_ROOT)
 zip_files <- list.files(
     DATA_DIR_ROOT,
     pattern = "\\.zip$",
@@ -55,14 +65,15 @@ cache <- list()
 read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
     message(now(), " | Processing ZIP: ", basename(zip_file))
     if (zip_file %in% names(cache)) {
-        message("  -> Using cached version")
+        message("\t-> Using cached version")
         return(cache[[zip_file]])  }
     
     tmp_dir <- tempdir()
     # Technically this next step isn't necessary, because tempdir()
-    # gives us a directory in the system "temporary" space, which will
-    # get automatically cleaned up
+    # gives us a directory in the system "temporary" space, which
+    # will automatically get cleaned up
     on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+    # Extract and list .data files
     unzip(zip_file, exdir = tmp_dir)
     data_files <- list.files(
         tmp_dir,
@@ -70,26 +81,26 @@ read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
         full.names = TRUE,
         recursive = TRUE  )
     
-    message("  -> .data files found: ", length(data_files))
+    message("\t-> .data files found: ", length(data_files))
     if (length(data_files) == 0) {
         stop("No .data files inside ZIP: ", zip_file) }
     
     dat_list <- lapply(data_files[1:2], function(f) {
-        message("     Reading: ", basename(f))
+        message("\tReading: ", basename(f))
         ffi_read_LI7810(f) %>% as_tibble()
     })
     
     dat <- bind_rows(dat_list) %>%
-        # Some machines can be in the wrong time zone; ensure everything is EST
+        # Some machines can be in the wrong time zone; 
+        # ensure everything is EST
         mutate(TIMESTAMP = with_tz(TIMESTAMP, tz))
     cache[[zip_file]] <<- dat
-    message("  -> ZIP finished: ", basename(zip_file))
+    message("\t-> ZIP finished: ", basename(zip_file))
     return(dat)
 }
 
 # ACTUAL EXECUTION 
 message(now(), " | Starting data read")
-debug(read_li7810_zip)
 alldat_list <- lapply(zip_files, read_li7810_zip)
 alldat <- bind_rows(alldat_list)
 message(now(), " | DONE")
