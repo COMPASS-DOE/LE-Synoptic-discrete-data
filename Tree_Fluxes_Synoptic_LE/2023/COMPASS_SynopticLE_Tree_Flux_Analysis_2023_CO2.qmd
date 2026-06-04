@@ -71,23 +71,30 @@ read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
     tmp_dir <- tempdir()
     # Technically this next step isn't necessary, because tempdir()
     # gives us a directory in the system "temporary" space, which
-    # will automatically get cleaned up
+    # will automatically get cleaned up. But still not a bad idea!
     on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+    
     # Extract and list .data files
     unzip(zip_file, exdir = tmp_dir)
-    data_files <- list.files(
-        tmp_dir,
-        pattern = "\\.data$",
-        full.names = TRUE,
-        recursive = TRUE  )
+    data_files <- list.files(tmp_dir,
+                             pattern = "\\.data$",
+                             full.names = TRUE,
+                             recursive = TRUE)
     
     message("\t-> .data files found: ", length(data_files))
     if (length(data_files) == 0) {
         stop("No .data files inside ZIP: ", zip_file) }
     
-    dat_list <- lapply(data_files[1:2], function(f) {
+    dat_list <- lapply(data_files, function(f) {
         message("\tReading: ", basename(f))
-        ffi_read_LI7810(f) %>% as_tibble()
+        ffi_read_LI7810(f) %>% 
+            as_tibble() %>% 
+            # these are big files, so immediately drop unneeded columns;
+            # this saves memory and speeds operations
+            select(-DATAH, -SECONDS, -NANOSECONDS, -NDX, -REMARK, 
+                   -INPUT_VOLTAGE, -RING_DOWN_TIME, -PHASE_ERROR, 
+                   -LASER_T_SHIFT, -LASER_PHASE_P, -LASER_T,
+                   -RESIDUAL, -THERMAL_ENCLOSURE_T)
     })
     
     dat <- bind_rows(dat_list) %>%
@@ -101,16 +108,15 @@ read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
 
 # ACTUAL EXECUTION 
 message(now(), " | Starting data read")
-alldat_list <- lapply(zip_files, read_li7810_zip)
-alldat <- bind_rows(alldat_list)
+alldat <- lapply(zip_files, read_li7810_zip) %>% bind_rows()
 message(now(), " | DONE")
-message("Final number of rows: ", nrow(alldat))
+message("\tFinal number of rows: ", nrow(alldat))
 
 # Show result
 print(head(alldat))
 
 # REMOVING WEIRD VERY LOW VALUES ON "2022-12-20 11:41:00" co2=-4000 licor bug???
-alldat<-alldat %>% filter(CO2 > -1000)
+alldat <- alldat %>% filter(CO2 > -1000)
 ```
 
 ## Read in metadata file and match to raw data
