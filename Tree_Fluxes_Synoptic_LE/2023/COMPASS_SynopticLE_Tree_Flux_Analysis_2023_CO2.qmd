@@ -196,7 +196,7 @@ if(nrow(obs_length_problems) > 0) {
 }
 
 # Check for duplicated plot entries
-if(any(duplicated(metadat_sn$Plot))) {
+if(any(duplicated(metadat$Plot))) {
     stop("There are duplicated Plot entries!")
 }
 
@@ -213,61 +213,69 @@ alldat %>%
 ## Match metadata to raw data
 
 ```{r data-metadata-match}
-# Use an existing preprocessed file if one exists
-PROCESSED_FILE <- "alldat_matched_2023.rds"
-if(file.exists(PROCESSED_FILE)) {
-    message("Reading existing processed file ", PROCESSED_FILE)
-    alldat_matched <- readRDS(PROCESSED_FILE)
-} else {
-    # ...otherwise, match data per equipment (considering different serial numbers) uhul!
-    matched_list <- list()
-    for(sn in unique(alldat$SN)) {
-        message("Matching ", sn)
-        alldat %>% 
-            filter(SN == sn) ->
-            alldat_sn
-        message("\tData rows = ", nrow(dat_sn))
-        metadat %>% 
-            filter(SN == sn) %>% 
-            arrange(Date, Time_start) %>%
-            mutate(metadat_row = row_number()) ->
-            metadat_sn
-        message("\tMetadata rows = ", nrow(metadat_sn))
-        
-        # The actual match step
-        alldat_sn$metadat_row <- ffi_metadata_match(
-            data_timestamps = alldat_sn$TIMESTAMP,
-            start_dates     = metadat_sn$Date,
-            start_times     = as.character(metadat_sn$Time_start),
-            obs_lengths     = metadat_sn$Obs_length)
-        # Drop unmatched rows
-        n_before <- nrow(alldat_sn)
-        dat_i <- alldat_sn %>% filter(!is.na(metadat_row))
-        message("  Matched rows: ", nrow(alldat_sn), " / ", n_before)
-        
-        # ...and then copy needed metadata into data frame
-        alldat_sn %>%
-            mutate(Plot      = metadat_sn$Plot[metadat_row],
-                   Site      = metadat_sn$Site[metadat_row],
-                   Zone      = metadat_sn$Zone[metadat_row],
-                   Volume    = metadat_sn$Volume[metadat_row],
-                   Temp      = metadat_sn$Temp[metadat_row],
-                   Area      = metadat_sn$Area[metadat_row],
-                   Dead_band = metadat_sn$Dead_band[metadat_row]) ->
-            matched_list[[sn]]
+PROCESSED_FILE_BASE <- "alldat_matched_2023"
+matched_list <- list()
+for(sn in unique(alldat$SN)) {
+    message("\tMatching ", sn)
+    
+    # Pre-processed data available?
+    pf <- paste0(PROCESSED_FILE_BASE, "_", sn, ".rds")
+    if(file.exists(pf)) {
+        message("\tReading existing processed file ", pf)
+        matched_list[[sn]] <- readRDS(pf)
+        next
     }
     
-    # All done! Pull data together and do final sanity checks
-    message("Matching finished successfully")
-    alldat_matched <- bind_rows(matched_list)
-    stopifnot(
-        !anyNA(alldat_matched$Plot),
-        nrow(alldat_matched) > 0
-    )
+    # No processed file available for this NS
+    alldat %>% 
+        filter(SN == sn) ->
+        dat_sn
+    message("\tData rows = ", nrow(dat_sn))
+    metadat %>% 
+        filter(SN == sn) %>% 
+        arrange(Date, Time_start) %>%
+        mutate(metadat_row = row_number()) ->
+        metadat_sn
+    message("\tMetadata rows = ", nrow(metadat_sn))
     
-    message("Saving ", PROCESSED_FILE)
-    saveRDS(alldat_matched, PROCESSED_FILE)
+    if(nrow(metadat_sn) == 0) {
+        message("\tNo metadata rows! Moving on")
+        next
+    }
+    # The actual match step
+    dat_sn$metadat_row <- ffi_metadata_match(
+        data_timestamps = dat_sn$TIMESTAMP,
+        start_dates     = metadat_sn$Date,
+        start_times     = as.character(metadat_sn$Time_start),
+        obs_lengths     = metadat_sn$Obs_length)
+    # Drop unmatched rows
+    n_before <- nrow(dat_sn)
+    dat_i <- dat_sn %>% filter(!is.na(metadat_row))
+    message("\tMatched rows: ", nrow(dat_sn), " / ", n_before)
+    
+    # ...and then copy needed metadata into data frame
+    dat_sn %>%
+        mutate(Plot      = metadat_sn$Plot[metadat_row],
+               Site      = metadat_sn$Site[metadat_row],
+               Zone      = metadat_sn$Zone[metadat_row],
+               Volume    = metadat_sn$Volume[metadat_row],
+               # TODO: this column is not in the metadata
+               #Temp      = metadat_sn$Temp[metadat_row],
+               Area      = metadat_sn$Area[metadat_row],
+               Dead_band = metadat_sn$Dead_band[metadat_row]) ->
+        matched_list[[sn]]
+    
+    message("\tSaving ", pf)
+    saveRDS(matched_list[[sn]], pf)
 }
+
+# All done! Pull data together and do final sanity checks
+message("Matching finished successfully")
+alldat_matched <- bind_rows(matched_list)
+stopifnot(
+    !anyNA(alldat_matched$Plot),
+    nrow(alldat_matched) > 0
+)
 
 message("Matched dataset rows: ", nrow(alldat_matched))
 head(alldat_matched)
