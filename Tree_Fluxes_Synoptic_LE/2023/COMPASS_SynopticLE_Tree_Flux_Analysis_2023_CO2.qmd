@@ -187,13 +187,18 @@ print(overlaps_detected)
 # TODO -- should the code stop() if overlaps are detected?
 
 # Check problems with obs_length - this is a frequent bug for manual field notes 
-field_notes_overlap <- metadat %>%
+obs_length_problems <- metadat %>%
     filter(is.na(Obs_length) | Obs_length <= 0) %>%
-    select(SN, Date, Plot,
-           TIMESTAMP, end_ts, Obs_length)
+    select(SN, Date, Plot, TIMESTAMP, end_ts, Obs_length)
+if(nrow(obs_length_problems) > 0) {
+    print(obs_length_problems)
+    stop("Observations length <=0 detected")
+}
 
-print(field_notes_overlap)
-# TODO -- should the code stop() if bad obs_lengths are detected?
+# Check for duplicated plot entries
+if(any(duplicated(metadat_sn$Plot))) {
+    stop("There are duplicated Plot entries!")
+}
 
 # checking unique measurment start time and stop time
 alldat %>%
@@ -207,94 +212,70 @@ alldat %>%
 
 ## Match metadata to raw data
 
-```{#r}
-#function to match data per equipment (considering different serial numbers) uhul!
-match_flux_metadata <- function(alldat, metadat) {
-message("Starting metadata ↔ Licor matching")
-#Sanity checks (fail early)
-stopifnot(
-"TIMESTAMP" %in% names(alldat),
-"SN"        %in% names(alldat),
-"Date"      %in% names(metadat),
-"Time_start"%in% names(metadat),
-"Obs_length"%in% names(metadat),
-"Plot"      %in% names(metadat)
-)
+```{r data-metadata-match}
+# Use an existing preprocessed file if one exists
+PROCESSED_FILE <- "alldat_matched_2023.rds"
+if(file.exists(PROCESSED_FILE)) {
+    message("Reading existing processed file ", PROCESSED_FILE)
+    alldat_matched <- readRDS(PROCESSED_FILE)
+} else {
+    # ...otherwise, match data per equipment (considering different serial numbers) uhul!
+    matched_list <- list()
+    for(sn in unique(alldat$SN)) {
+        message("Matching ", sn)
+        alldat %>% 
+            filter(SN == sn) ->
+            alldat_sn
+        message("\tData rows = ", nrow(dat_sn))
+        metadat %>% 
+            filter(SN == sn) %>% 
+            arrange(Date, Time_start) %>%
+            mutate(metadat_row = row_number()) ->
+            metadat_sn
+        message("\tMetadata rows = ", nrow(metadat_sn))
+        
+        # The actual match step
+        alldat_sn$metadat_row <- ffi_metadata_match(
+            data_timestamps = alldat_sn$TIMESTAMP,
+            start_dates     = metadat_sn$Date,
+            start_times     = as.character(metadat_sn$Time_start),
+            obs_lengths     = metadat_sn$Obs_length)
+        # Drop unmatched rows
+        n_before <- nrow(alldat_sn)
+        dat_i <- alldat_sn %>% filter(!is.na(metadat_row))
+        message("  Matched rows: ", nrow(alldat_sn), " / ", n_before)
+        
+        # ...and then copy needed metadata into data frame
+        alldat_sn %>%
+            mutate(Plot      = metadat_sn$Plot[metadat_row],
+                   Site      = metadat_sn$Site[metadat_row],
+                   Zone      = metadat_sn$Zone[metadat_row],
+                   Volume    = metadat_sn$Volume[metadat_row],
+                   Temp      = metadat_sn$Temp[metadat_row],
+                   Area      = metadat_sn$Area[metadat_row],
+                   Dead_band = metadat_sn$Dead_band[metadat_row]) ->
+            matched_list[[sn]]
+    }
+    
+    # All done! Pull data together and do final sanity checks
+    message("Matching finished successfully")
+    alldat_matched <- bind_rows(matched_list)
+    stopifnot(
+        !anyNA(alldat_matched$Plot),
+        nrow(alldat_matched) > 0
+    )
+    
+    message("Saving ", PROCESSED_FILE)
+    saveRDS(alldat_matched, PROCESSED_FILE)
+}
 
-stopifnot(all(metadat$Obs_length > 0, na.rm = TRUE))
-stopifnot(anyDuplicated(metadat$Plot) == 0)
-# Instruments present in BOTH datasets
-instruments <- intersect(
-unique(alldat$SN),
-unique(metadat$SN)
-)
-message("Instruments to process: ", paste(instruments, collapse = ", "))
-results <- lapply(instruments, function(sn) {
-message("Processing SN: ", sn)
-dat_i <- alldat %>%
-filter(SN == sn)
-meta_i <- metadat %>%
-filter(SN == sn) %>%
-arrange(Date, Time_start) %>%
-mutate(metadat_row = row_number())
-stopifnot(nrow(meta_i) > 0)
-# Actual matching 
-dat_i$metadat_row <- ffi_metadata_match(
-data_timestamps = dat_i$TIMESTAMP,
-start_dates     = meta_i$Date,
-start_times     = meta_i$Time_start,
-obs_lengths     = meta_i$Obs_length  )
-# Attach metadata (vectorized, fast)
-dat_i <- dat_i %>%
-mutate(
-Plot      = meta_i$Plot[metadat_row],
-Site      = meta_i$Site[metadat_row],
-Zone      = meta_i$Zone[metadat_row],
-Volume    = meta_i$Volume[metadat_row],
-Temp      = meta_i$Temp[metadat_row],
-Area      = meta_i$Area[metadat_row],
-Dead_band = meta_i$Dead_band[metadat_row]      )
-# Drop unmatched rows
-n_before <- nrow(dat_i)
-dat_i <- dat_i %>% filter(!is.na(metadat_row))
-n_after <- nrow(dat_i)
-message("  Matched rows: ", n_after, " / ", n_before)
-dat_i })
-alldat_matched <- rbindlist(results, fill = TRUE)
-#Final sanity checks 
-stopifnot(
-!anyNA(alldat_matched$Plot),
-nrow(alldat_matched) > 0
-)
-message("Matching finished successfully")
-return(alldat_matched)}
-
-#running the funciton
-message("Running final metadata matching...")
-alldat_matched <- match_flux_metadata(alldat, metadat)
 message("Matched dataset rows: ", nrow(alldat_matched))
 head(alldat_matched)
 
-#saving matched data and metadata as raw data is too big (today, Licor files leave in the COMPASS drive)
-saveRDS(alldat_matched, file = "alldat_matched_2023.rds")
-
-#can remove any row that have NA's in the CO2 column 
-#alldat <- alldat %>%
-# filter(!is.na(CO2))
-
 ```
-
-## reating alldata matched df
-```{r}
-
-# after you match the data for the first time - we can just read the .rds file to save processing time here
-# if you need to match licor data and metadata again, remove "#" from the previous chunks 
-
-alldat_matched <- readRDS("alldat_matched_2023.rds")
-```
-
 
 ##Extracting initial CO2 concentration
+
 ```{r}
 
 ## Extract initial CO2 concentration (t0) for each Plot for QAQC later
