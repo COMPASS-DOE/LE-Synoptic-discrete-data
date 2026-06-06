@@ -14,10 +14,12 @@ output-dir: "2023/PDF"
 ```{r packages, include = FALSE}
 # File reading
 library(here)
+library(readr)
 library(fluxfinder)
 #library(readxl)
 # Data processing
 library(dplyr)
+library(stringr)
 library(lubridate)
 # Statistics
 library(broom)
@@ -32,9 +34,9 @@ library(ggplot2)
 #                  library, character.only = TRUE))
 ```
 
-## Pull in Raw Datafiles
+## Pull in raw datafiles
 
-```{r}
+```{r read-data}
 # Defining where the raw data is
 
 DATA_DIR_ROOT <- here::here(
@@ -110,125 +112,96 @@ read_li7810_zip <- function(zip_file, tz = "US/Eastern") {
 message(now(), " | Starting data read")
 alldat <- lapply(zip_files, read_li7810_zip) %>% bind_rows()
 message(now(), " | DONE")
-message("\tFinal number of rows: ", nrow(alldat))
 
 # Show result
 print(head(alldat))
 
 # REMOVING WEIRD VERY LOW VALUES ON "2022-12-20 11:41:00" co2=-4000 licor bug???
-alldat <- alldat %>% filter(CO2 > -1000)
+na_co2 <- is.na(alldat$CO2)
+message("Removing ", sum(na_co2), " NA CO2 values")
+alldat <- alldat[!na_co2,]
+weird_co2 <- alldat$CO2 <= -1000 | alldat$CO2 >= 10000
+message("Removing ", sum(weird_co2), " weird CO2 values")
+alldat <- alldat[!weird_co2,]
+
+message("\tFinal number of rows: ", nrow(alldat))
 ```
 
-## Read in metadata file and match to raw data
+## Read in metadata file
 
-```{#r}
+```{r read-metadaa}
 md <- "Raw Data/COMPASS_SynopticLE_TreeFlux_Metadata_2023.csv"
-dat <- read.csv(md)
+dat <- read_csv(md)
 
 metadat <- dat %>%
-# Remove rows without date
-filter(!is.na(Date)) %>%
-# Keep only desired instruments
-filter(SN %in% c("TG10-01448", "TG10-01426", "TG10-01028")) %>%
-# Normalize Plot labels
-mutate(
-Plot_raw = toupper(Plot),
-# Extract plot components 
-#Site = str_extract(Plot_raw, "^[A-Z]{3}"),
-#Zone = str_extract(Plot_raw, "(TR|UP)"), # somehow all of the UP PTR measurements turned into TR
-Site = toupper(Site),
-Zone = toupper(Zone), 
-Replicate = str_extract(Plot_raw, "(?<=TR|UP)[0-9]+"),
-# Letter ONLY if it comes AFTER a number
-Letter = str_extract(Plot_raw, "(?<=[0-9])[A-Z]$"),
-# Time normalization
-Time_start = str_replace_all(as.character(Time_start), "\\.", ":") |> str_trim(),
-Stop.time  = str_replace_all(as.character(Stop.time),  "\\.", ":") |> str_trim(),
-# Safe time parsing (NO WARNINGS) 
-t_start = suppressWarnings(parse_date_time(Time_start, orders = c("H:M:S", "H:M"))),
-t_stop  = suppressWarnings(parse_date_time(Stop.time,  orders = c("H:M:S", "H:M"))),
-# Observation length
-Obs_length = as.numeric(t_stop - t_start, units = "secs"),
-# Timestamp
-TIMESTAMP = as.POSIXct(
-paste(Date, Time_start),
-format = "%m/%d/%Y %H:%M:%S",
-tz = "EST"
-),
-# Sequential ID
-Seq = row_number(),
-# INAL standardized Plot label
-Plot = if_else(
-is.na(Letter),
-paste(Date, Site, Zone, Replicate, Seq, sep = "_"),
-paste(Date, Site, Zone, Replicate, Letter, Seq, sep = "_")) )
+    # Remove rows without date
+    filter(!is.na(Date)) %>%
+    # Keep only desired instruments
+    filter(SN %in% c("TG10-01448", "TG10-01426", "TG10-01028")) %>%
+    # Normalize plot labels
+    mutate(Plot_raw = toupper(Plot),
+           # Extract plot components 
+           #Site = str_extract(Plot_raw, "^[A-Z]{3}"),
+           #Zone = str_extract(Plot_raw, "(TR|UP)"), # somehow all of the UP PTR measurements turned into TR
+           Site = toupper(Site),
+           Zone = toupper(Zone), 
+           Replicate = str_extract(Plot_raw, "(?<=TR|UP)[0-9]+"),
+           # Letter ONLY if it comes AFTER a number
+           Letter = str_extract(Plot_raw, "(?<=[0-9])[A-Z]$"),
+           # Observation length
+           Obs_length = as.numeric(`Stop time` - Time_start, units = "secs"),
+           # Construct timestamp
+           Date = mdy(Date, tz = "EST"),
+           TIMESTAMP = Date + Time_start,
+        end_ts = TIMESTAMP + Obs_length,
+           # Sequential ID
+           Seq = row_number(),
+           # INAL standardized Plot label
+           Plot = if_else(
+               is.na(Letter),
+               paste(Date, Site, Zone, Replicate, Seq, sep = "_"),
+               paste(Date, Site, Zone, Replicate, Letter, Seq, sep = "_")) )
 
 # Quick check
 head(metadat$Plot)
-
 ```
 
-## Check start times overlapsor missing values
+## Check for start time overlaps or missing values
 
-```{#r}
+```{r overlap-check}
 
-#checking if there is any start and stop time overlap from the field notes
+# Check if there is any start and stop time overlap from the field notes
 overlaps_detected <- metadat %>%
-mutate(
-start_ts = as.POSIXct(
-paste(Date, Time_start),
-format = "%m/%d/%Y %H:%M:%S",
-tz = "EST"
-),
-end_ts = start_ts + Obs_length
-) %>%
-arrange(SN, start_ts) %>%
-group_by(SN) %>%
-mutate(
-next_plot     = lead(Plot),
-next_start_ts = lead(start_ts),
-overlap_ffi   = !is.na(next_start_ts) & next_start_ts <= end_ts
-) %>%
-filter(overlap_ffi) %>%
-select(
-SN,
-Plot,
-start_ts,
-end_ts,
-next_plot,
-next_start_ts,
-Obs_length
-)
+    arrange(SN, TIMESTAMP) %>%
+    group_by(SN) %>%
+    mutate(next_plot = lead(Plot),
+           next_start_ts = lead(TIMESTAMP)) %>%
+    # is the next timestamp is less than the current end timestamp?
+    filter(!is.na(next_start_ts) & next_start_ts <= end_ts) %>%
+    select(SN, Plot,
+           TIMESTAMP, end_ts,
+           next_plot, next_start_ts,
+           Obs_length)
 
 print(overlaps_detected)
+# TODO -- should the code stop() if overlaps are detected?
 
-#checking problems with obs_length - this is a frequent bug for manual field notes 
-field_notes_overlap<-metadat %>%
-mutate(
-obs_problem =
-is.na(Obs_length) | Obs_length <= 0
-) %>%
-filter(obs_problem) %>%
-select(
-SN,
-Date,
-Plot,
-Time_start,
-Stop.time,
-Obs_length
-)
+# Check problems with obs_length - this is a frequent bug for manual field notes 
+field_notes_overlap <- metadat %>%
+    filter(is.na(Obs_length) | Obs_length <= 0) %>%
+    select(SN, Date, Plot,
+           TIMESTAMP, end_ts, Obs_length)
 
 print(field_notes_overlap)
+# TODO -- should the code stop() if bad obs_lengths are detected?
 
 # checking unique measurment start time and stop time
-# alldat %>%
-#     filter(
-#         SN == "TG10-01448",
-#         TIMESTAMP > as.POSIXct("2023-01-05 13:28:00"),
-#         TIMESTAMP < as.POSIXct("2023-01-05 13:33:00")
-#     ) %>%
-#     ggplot(aes(x = TIMESTAMP, y = CO2)) +
-#     geom_point()#+ylim(300,500)
+alldat %>%
+    filter(SN == "TG10-01448",
+           TIMESTAMP > ymd_hms("2023-01-05 13:28:00"),
+           TIMESTAMP < ymd_hms("2023-01-05 13:33:00")) %>%
+    ggplot(aes(x = TIMESTAMP, y = CO2)) +
+    geom_point()#+ylim(300,500)
 
 ```
 
