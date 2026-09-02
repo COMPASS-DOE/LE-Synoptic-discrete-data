@@ -1,0 +1,486 @@
+---
+title: "Synoptic LE: Manual Redox Probes"
+author: "Roberta Peixoto & Fausto Machado-Silva"
+date: today
+format:
+  pdf:
+    toc: true
+    keep-tex: true
+    output-dir: "LE-Synoptic-discrete-data/Manual_Redox_Probe_Data"
+---
+  
+# Measurements taken with SWAP Redox Probes & Calomel Ref probe
+# Protocol: https://docs.google.com/document/d/
+# 1dL2ZPhLFBAZJmVBCfKxup_KOYY96qA5IWfJmQen50pY/edit
+# Units = mV 
+
+##Add Required Packages
+```{r packages, include = FALSE}
+
+#Packages that are required 
+lapply(c(
+  "dplyr", "ggplot2", "ggpubr", "stringr",
+  "purrr", "tidyverse", "here", "broom", "tibble",
+  "googledrive", "googlesheets4", "data.table", 
+  "matrixStats", "gridExtra", "grid", "tidyverse", "knitr"), 
+  library, character.only = TRUE)
+
+```
+
+##Setup
+```{r setup}
+
+###### File Names - PLEASE CHANGE 
+#file path and name for raw summary data file 
+dat <- read.csv("Raw_Data/COMPASS_Synoptic_LE_Redox_2022_2025_Raw.csv")
+#soildat <- read.csv("Raw Data/LE_Soil_pH.csv") 
+
+##Fix Sample Zone naming
+dat <- dat %>%
+  mutate(Zone = ifelse(Zone == "WE", "WC", Zone))%>%
+  rename(Depth=Depth_cm)
+
+##Std error function
+std.error <- function (x, na.rm=FALSE){
+  sqrt(var(x, na.rm = na.rm) / sum(!is.na(x)))}
+
+```
+
+## Adjust Raw Readings by pH
+## Need to adjust for pH: 
+# redox = redoxi + [(ph - 5)59 + 224] This is the equation from Megonigal, 
+# Patrick, & Faulkner 1993
+# They used a calomel electrode and used 224 to adjust to H2, 
+# we use a KCl ref probe, so we need to add 202 instead 
+```{r adjust for pH, message = FALSE, warning = FALSE}
+
+##Remove unnecessary column in redox data
+prelong <- dat %>% 
+  select (c(1:11), -c("Campaign","Time", "Day"))%>% 
+  mutate(Notes = NA, 
+         Time_24hr = NA, 
+         Time_Zone = NA, 
+         Topography = NA)
+
+#switch redox data to long format 
+datlong <-  as.data.frame(melt(setDT(prelong), id.vars = c("Date", "Month", "Year", "Site", "Zone", "Depth", "Time_24hr", "Time_Zone", "Topography", "Notes"), 
+                               variable.name = "RP_mV"))
+
+# ##Add in soil pH data
+# all_corr <- merge(datlong, soildat, by = c("Site", "Zone"), all = TRUE)
+# 
+# ##Adjust redox for pH
+# all_corr <- all_corr %>% 
+#   mutate(value_corr = value + ((pH - 5)*59 + 202))
+
+##Adjust redox for KCl ref probe
+datlong <- datlong %>%
+  mutate(value = as.numeric(value),
+         value_corr = value + 202)
+
+##Average across all 5-6 measurements for each sampling Site, Zone, Depth, Month, Year
+red1 <- datlong %>%
+  group_by(Date, Month, Year, Site, Zone, Depth, Time_24hr, Time_Zone, Topography, Notes) %>%
+  summarise(Date = first(Date), 
+            Avg_mV = mean(value_corr, na.rm=TRUE), 
+            Std_dv = sd(value_corr, na.rm=TRUE), 
+            Std_err = std.error(value_corr, na.rm=TRUE), 
+            Notes = first(Notes),
+            .groups = "drop")
+
+# head(red1)
+
+```
+
+##Write Out Adjusted & Avg'd Data
+```{r write out processed data, include = FALSE}
+
+years <- unique(red1$Year)
+
+walk(years, function(yr) {
+  out_dir <- paste0("Processed_Data_", yr)
+  dir.create(out_dir, showWarnings = FALSE)
+  
+  processed_file_name <- file.path(
+    out_dir,
+    paste0("COMPASS_Synoptic_LE_Redox_", yr, "_processed.csv")
+  )
+  
+  dat_yr <- red1 %>% filter(Year == yr)
+  write.csv(dat_yr, processed_file_name, row.names = FALSE)
+})
+
+##Clean field notes and creating columns for ESSDive standard 
+unique(red1$Notes, na.rm=TRUE)
+
+red2 <- red1 %>%
+  mutate(Day = as.integer(sapply(strsplit(Date, "/"), `[`, 2)),
+         Region = "LE",
+         Project= "COMPASS: Synoptic",
+        Notes = case_when(
+    str_detect(Notes, "NA dry soil - very hard") ~ "dry soil - very hard", 
+    str_detect(Notes, "average temp") ~ NA, 
+    str_detect(Notes, "S58-GHG soilcollar") ~ NA, 
+    str_detect(Notes, "time on sheet says 11:05") ~ NA, 
+    Notes == "" ~ NA, 
+    TRUE ~ Notes
+  )) %>% 
+  mutate(Notes = str_to_sentence(Notes))%>%
+  rename(Plot=Zone)%>%
+  dplyr::select(-Date)
+
+unique(red2$Notes)
+
+#write out a csv of all the data to the main folder: 
+write.csv(red2, "COMPASS_SynopticLE_Redox_AllData.csv", row.names = FALSE)
+
+```
+
+## Vizualize Data
+```{r visualize data, echo = FALSE, warning = FALSE, message = FALSE}
+
+#Plot samples to get a first look at redox (sanity check)
+data_plotting <- red1
+
+#Order by Zone from Upland to Surface Water
+data_plotting$Zone = factor(data_plotting$Zone, levels = c("UP",  "TR", "WC"))
+data_plotting <- data_plotting[order(data_plotting$Zone), ]
+
+#group the data for plotting
+data_plotting_year <- data_plotting %>%
+  group_by(Site, Year) %>%
+  mutate(row_num = factor(row_number())) %>%  # create row_num as factor per group
+  ungroup()
+
+#Plot all data and change colors based on zone:
+viz_redox_plot <- ggplot(data_plotting_year, aes(x = row_num, y = Avg_mV, fill = Zone)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) +
+  facet_grid(Year ~ Site, scales="free_x") +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42",
+    "WC" = "#419973"
+  )) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(), 
+        legend.position = "bottom") +
+  labs(x = " ", y = "Redox Potential (mV)", title = "All Redox Data") +
+  scale_x_discrete(drop = TRUE)
+
+viz_redox_plot
+
+#Plot averaged data by depth and change colors based on zone:
+red <- datlong %>%
+  group_by(Site, Zone, Depth, Year) %>%
+  summarise(Date    = mean(Date),
+            Avg_mV  = mean(value_corr, na.rm = TRUE),
+            Std_dv  = sd(value_corr, na.rm = TRUE),
+            Std_err = std.error(value_corr, na.rm = TRUE),
+            .groups = "drop")
+
+build_redox_depth_plot <- function(yr) {
+  d <- red %>% filter(Year == yr)
+  
+  ggplot(d, aes(x = Depth, y = Avg_mV, col = Zone, fill = Zone)) +
+    geom_point(size = 3) +
+    geom_line(linewidth = 1.5) +
+    geom_errorbar(aes(ymin = Avg_mV - Std_err, ymax = Avg_mV + Std_err),
+                  width = 0.3, position = position_dodge(.1)) +
+    scale_x_reverse() +
+    coord_flip() +
+    theme_classic() +
+    facet_grid(~ factor(Site, levels = c("CRC", "PTR", "OWC"))) +
+    labs(x = "Depth (cm)", y = "Redox Potential (mV)",
+         title = paste("Averaged Redox Data —", yr)) +
+    scale_colour_manual(values = c(
+      "UP" = "#20063B",
+      "TR" = "#FFBC42",
+      "WC" = "#419973"
+    )) +
+    theme(panel.spacing     = unit(.5, "lines"),
+          panel.border      = element_rect(color = "black", fill = NA, linewidth = 1),
+          strip.background  = element_rect(color = "black", linewidth = 1),
+          plot.margin       = margin(t = 0.1, r = 0.1, l = 0.1, b = 0.1, "cm"),
+          plot.title        = element_text(hjust = 0.0),
+          axis.text         = element_text(size = 12),
+          axis.title        = element_text(size = 12),
+          legend.text       = element_text(size = 12),
+          legend.title      = element_blank(),
+          legend.position   = "bottom")
+}
+
+years <- sort(unique(red$Year))
+redox_depth_plots <- purrr::map(years, build_redox_depth_plot)
+
+# print each one so they each render as a separate figure in the Quarto output
+walk(redox_depth_plots, print)
+
+```
+
+
+## Summarized data for Site and Zone 
+```{r Summarize and Visualize Data, echo=FALSE, warning=FALSE, message = FALSE, fig.width=22, fig.height=8, dpi = 500}
+
+##Make Date Column with just Year and Month for Sample ID
+all_dat_dates <- data_plotting %>%
+  mutate(
+    YearMonth = if_else(
+      Month < 10,
+      # Modify the string:
+      paste(Year, Month, sep = "-0"), 
+      paste(Year, Month, sep = "-"), 
+    )
+  )
+
+##Summarize SO4 and Cl by Date, Site, and Zone
+Redox_avg <- all_dat_dates %>%
+  group_by(Month, Year, Site, Zone) %>%
+   dplyr::summarize(mean_mV = mean(Avg_mV, na.rm=TRUE), 
+            YearMonth = first(YearMonth), 
+            Date = first(Date))
+
+# Concatenate with a day (e.g., "01" for the first day)
+Redox_avg$Date <- paste(Redox_avg$YearMonth, Redox_avg$Date, sep = "-")
+
+# Convert to Date object
+Redox_avg$Date <- as.Date(Redox_avg$Date)
+
+# Define the specific date breaks you want to display
+specific_breaks <- as.Date(c("2022-01-01", "2023-01-01", "2024-01-01", "2025-01-01"))
+
+viz_redox_plot_avgs <- ggplot(Redox_avg, aes(x = Date, y = mean_mV, color = Zone, group = Zone)) +
+  geom_point(size = 3) + 
+  # geom_errorbar(aes(ymin = mean_Cl - sd_Cl, ymax = mean_Cl + sd_Cl), width = 0.2) + 
+  geom_line() + 
+  facet_grid( ~ Site, scales="free_y") +
+  scale_color_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42",
+    "WC" = "#419973")) +
+  theme_classic() +
+  labs(x = "Date", y = "Redox Potential (mV)", title = "Samples: Redox\n (No std dev because values were averaged previously,\n so new std dev would be incorrect)") +
+  theme(
+    panel.spacing = unit(0.5, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) +
+  # theme(axis.text.x = element_text(angle = 90, hjust = 0.5))+ 
+  theme(text = element_text(size = 30))+
+  scale_x_date(breaks = specific_breaks, date_labels = "%Y", expand = expansion(mult = c(0.18, 0.05)))+
+  theme(axis.ticks.x = element_line(linewidth = 1))+
+  theme(axis.ticks.length.x = unit(0.25, "cm"))
+
+viz_redox_plot_avgs
+
+```
+
+
+## Summarized Data by Depth
+```{r Summarize Data by Depth, echo=FALSE, warning=FALSE, message = FALSE, fig.width=22, fig.height=8, dpi = 500}
+
+##Remove SW and calculate average and sd for each depth
+Redox_avg <- all_dat_dates %>%
+  group_by(Site, Zone, Depth) %>%
+   dplyr::summarize(mean_mV = mean(Avg_mV, na.rm=TRUE))
+
+viz_redox_plot_depth <- ggplot(Redox_avg, aes(x = as.numeric(Depth), y = mean_mV, color = Zone, group = Zone)) +
+  geom_point(size = 3) + 
+  # Zone_geom_errorbar(aes(ymin = mean_Cl - sd_Cl, ymax = mean_Cl + sd_Cl), width = 0.5, size = 1) + 
+  geom_line(size = 1.5) + 
+  facet_wrap( ~ Site, scales="free", nrow = 1) + 
+  scale_color_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42",
+    "WC" = "#419973")) +
+  theme_classic() +
+  #labs(x = "Depth (cm)", y = "Redox Potential (mV)", title = "Samples: Redox profiles across transects") +
+  labs(x = "Depth (cm)", y = "Redox Potential (mV)", title = "Samples: Redox\n (No std dev because values were averaged previously,\n so new std dev would be incorrect)") +
+  theme(text = element_text(size = 20))+
+  coord_flip() + 
+  scale_x_continuous(trans = "reverse") + 
+  labs(color = "Zone") 
+
+viz_redox_plot_depth
+
+```
+
+## Boxplot by depth
+```{r Boxplot by depth, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 500}
+
+##Remove SW
+data_plotting_depth <- data_plotting %>%
+  mutate(Depth_cm = factor(Depth, levels = c("5", "10", "20")))
+
+
+#Plot data and change colors based on Zone:
+viz_redox_depth <- ggplot(data_plotting_depth, aes(x = Depth_cm, y = Avg_mV, fill = Zone)) +
+  geom_boxplot() +
+  facet_wrap(~ Site, scales = "free", nrow = 1) +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42",
+    "WC" = "#419973")) +
+  theme_classic() +
+  labs(x = "Depth (cm)", y = "Redox Potential (mV)", title = "Samples: Redox") +
+  theme(text = element_text(size = 30)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  coord_flip()
+
+viz_redox_depth
+
+```
+
+## Boxplot summary
+```{r Overall Boxplot, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 300}
+
+
+##Summarize SO4 and Cl by Date, Site, and Zone
+viz_redox_boxplot <- ggplot(all_dat_dates, aes(x = Zone, y = Avg_mV, fill = Zone, group = Zone)) +
+  geom_boxplot() + 
+  facet_grid( ~ Site, scales = "free_x") +
+  scale_x_discrete(drop = TRUE) +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42",
+    "WC" = "#419973")) +
+  theme_classic() +
+  labs(x = " ", y = "Redox Potential (mV)", title = "Synoptic LE Soil: Redox Potential") +
+  theme(
+    panel.spacing = unit(0.5, "lines"), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))+ 
+  theme(text = element_text(size = 30))+
+  theme(axis.ticks.x = element_line(linewidth = 1))+
+  theme(axis.ticks.length.x = unit(0.25, "cm"))+ 
+  theme(legend.position = "none")
+
+viz_redox_boxplot
+
+# Save as a PNG
+png("COMPASS_SynopticLE_Redox_alldata.png", width = 2000, height = 1200, res = 100) 
+print(viz_redox_boxplot)  # For ggplot objects, use print()
+dev.off() 
+
+```
+
+##Calculate summary metrics
+```{r Additional summary metrics, include=FALSE, dpi = 300}
+# It would also be great to add a summary chunk that will calculate value ranges, means, and standard deviations (and errors) for each site, zone, depth for each year; also for each site zone, depth overall; and for each site and zone overall so that we have some easy access to metrics. Was just thinking this might be helpful today when re-collating the DIC data.
+
+colnames(red1)
+
+##Metrics for each site, zone, depth for each year
+summary_by_year <- red1 %>%
+  group_by(Year, Site, Zone, Depth) %>%
+   reframe(
+     min_mV = min(Avg_mV, na.rm=TRUE),
+     max_mV = max(Avg_mV, na.rm=TRUE), 
+     mean_mV = mean(Avg_mV, na.rm=TRUE)) %>%
+  mutate(across(where(is.numeric), round, digits = 4)) 
+
+##Metrics for each site, zone, depth for all years
+summary_all_years <- red1 %>%
+  group_by(Site, Zone, Depth) %>%
+   reframe(
+     min_mV = min(Avg_mV, na.rm=TRUE),
+     max_mV = max(Avg_mV, na.rm=TRUE), 
+     mean_mV = mean(Avg_mV, na.rm=TRUE)) %>%
+  mutate(across(where(is.numeric), round, digits = 4)) 
+
+##Metrics for each site and zone for all depths and years
+summary_all_depths_years <- red1 %>%
+  group_by(Site, Zone) %>%
+   reframe(
+     min_mV = min(Avg_mV, na.rm=TRUE),
+     max_mV = max(Avg_mV, na.rm=TRUE), 
+     mean_mV = mean(Avg_mV, na.rm=TRUE)) %>%
+  mutate(across(where(is.numeric), round, digits = 2)) %>%
+  rename(Plot = Zone)
+
+```
+
+##Calculate number of samples 
+```{r Number of samples, include=FALSE, dpi = 300}
+
+##Metrics for each year
+sample_numbers_years <- red1 %>%
+  group_by(Year) %>%
+   reframe(
+     Number_of_samples = n())
+
+##Metrics for each site, zone, depth for all years
+sample_numbers <- red1 %>%
+  group_by(Site, Zone, Depth) %>%
+   reframe(
+     Number_of_samples = n())
+     
+
+```
+
+## Summary Tables
+```{r Summary table metrics, echo = FALSE, message = FALSE, results = "asis", out.width="100%"}
+
+library(kableExtra)
+
+summary_table <- kable(
+  summary_all_depths_years[, c("Site", "Plot", "min_mV", "max_mV", "mean_mV")],
+  format = "latex",
+  booktabs = TRUE,
+  escape = TRUE,
+  digits = 3,
+  caption = "Summary Statistics",
+  col.names = c("Site", "Plot", "Min (mV)", "Max (mV)", "Mean (mV)")
+) %>%
+  kable_styling(latex_options = c("hold_position", "striped"),
+                font_size = 12) %>%
+  row_spec(0, bold = TRUE) %>%
+  column_spec(1, bold = TRUE, width = "0.8in") %>%
+  column_spec(2, width = "1.6in") %>%
+  column_spec(3:5, width = "0.9in")
+
+summary_table
+
+```
+
+## Number of Samples
+```{r number of samples tables, echo = FALSE, message = FALSE, dpi = 100}
+
+kable(
+  sample_numbers_years[, c("Year", "Number_of_samples")],  
+  format = "latex",
+  booktabs = TRUE,
+  caption = paste0("Total Samples: ", nrow(red1))
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "striped", "scale_down"),
+    font_size = 12
+  ) %>%
+  row_spec(0, bold = TRUE) %>%   # header
+  column_spec(1, bold = TRUE)
+
+```
+
+```{r Number of Samples Barplots, echo=FALSE, warning=FALSE, message = FALSE, fig.width=16, fig.height=10, dpi = 300}
+
+##Number of Samples Plots
+sample_num_barplot <- ggplot(sample_numbers, aes(x = as.character(Depth), y = Number_of_samples, fill = Zone)) +
+  geom_col(position = "dodge", color = "black", width = 0.75) + # 'color' adds a border to the bars
+  facet_grid(~Site , scales = "free_x") +
+  scale_x_discrete(drop = TRUE) +
+  scale_fill_manual(values = c(
+    "UP" = "#20063B",
+    "TR" = "#FFBC42",
+    "WC" = "#419973")) +
+  theme_classic() +
+  labs(x = "Depth (cm)", y = "Number of Samples", title = "Synoptic LE Manual Redox Probe Sample Numbers") +
+  theme(
+    panel.spacing = unit(0.5, "lines"),
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))+
+  theme(text = element_text(size = 30))+
+  theme(axis.ticks.x = element_line(linewidth = 1))+
+  theme(axis.ticks.length.x = unit(0.25, "cm"))
+  
+sample_num_barplot
+```
+
+
+
