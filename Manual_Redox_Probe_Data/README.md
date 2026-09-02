@@ -42,7 +42,7 @@ For questions about these data: contact Roberta B Peixoto (roberta.bittencourtpe
 **Overview Summary of Data**
 
 ![Redox boxplot plot summary](COMPASS_SynopticLE_Redox_alldata.png) 
-![Redox boxplot depth summary](Overview Depth profile.png) 
+![Redox boxplot depth summary](Overview_Depth_profile.png) 
 
 <br>
 
