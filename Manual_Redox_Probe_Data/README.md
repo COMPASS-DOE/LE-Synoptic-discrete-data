@@ -4,11 +4,11 @@ Data Type: Manual Redox Probe Measurements (REDOX)
 
 Sampling Type: Soil Redox Profiles
 
-Sampling Locations: COMPASS Synoptic Sites: CRC, PTR, OWC
+Sampling Locations: COMPASS Synoptic Sites: CRC, OWC, PTR
 
 <br>
 
-Roberta B Peixoto; Fausto Machado-Silva; Bailey V; Michael N Weintraub (20XX): COMPASS-FME Synoptic Site Soil Redox Profiles (Manual Redox Probe). COMPASS-FME, ESS-DIVE repository. Dataset. doi:TBD accessed via Link TBD.
+Roberta B Peixoto; Fausto Machado-Silva; Evangelos Grammenidis; Bailey V; Michael N Weintraub (20XX): COMPASS-FME Synoptic Site Soil Redox Profiles (Manual Redox Probe). COMPASS-FME, ESS-DIVE repository. Dataset. doi:TBD accessed via Link TBD.
 
 <br>
 
@@ -35,7 +35,7 @@ For questions about these data: contact Roberta B Peixoto (roberta.bittencourtpe
 <br>
  
 
-![Redox OWC winter](Redox_OWC_winter.jpeg)
+![Redox overview](Redox_viz_plot.jpeg)
 
 <br>
 
@@ -47,10 +47,10 @@ For questions about these data: contact Roberta B Peixoto (roberta.bittencourtpe
 
 **Site Location Descriptions**
 
-Crane Creek (CRC); one of the COMPASS-FME synoptic sites, and has three plots: upland ('UP'; located at 38.8741N, 76.5522W), transition ('TR'; 38.8745, 76.5515W), and wetland ('WC'; 38.8750N, 76.5500W). Note that the upland overlaps spatially with the DELUGE (DLG) F4 plot. This transect spans a mid- to late-successional (~80 years old) temperate, deciduous coastal forest and a mesohaline marsh along the Rhode River in Edgewater, MD.
+Crane Creek (CRC); one of the COMPASS-FME synoptic sites, and has three plots: upland ('UP'; located at 41.61524N, 83.22889W), transition ('TR'; 38.8745, 76.5515W), and wetland ('WC'; 41.62192N, 83.23815W). Note that the upland overlaps spatially with the DELUGE (DLG) F4 plot. This transect spans a mid- to late-successional (~80 years old) temperate, deciduous coastal forest and a mesohaline marsh along the Rhode River in Edgewater, MD.
   
-Portage (PTR); one of the COMPASS-FME synoptic sites located in the Blackwater National Wildlife Refuge along the mesohaline Beaverdam Creek. This synoptic site consists of three plots: upland ('UP'; located at 38.4315N, 76.2267W), transition ('TR'; 38.4310N, 76.2277W), and wetland ('WC'; 38.4308N, 76.2286W). The site was established in June 2022. The transect spans a coastal loblolly pine forest and a mesohaline marsh dominated by Spartina and Distichlis.
+Portage (PTR); one of the COMPASS-FME synoptic sites located in the Blackwater National Wildlife Refuge along the mesohaline Beaverdam Creek. This synoptic site consists of three plots: upland ('UP'; located at 41.50148N, 83.04611W), transition ('TR'; 41.502723N, 83.045662W), and wetland ('WC'; 41.50174N, 83.04372W). The site was established in June 2022. The transect spans a coastal loblolly pine forest and a mesohaline marsh dominated by Spartina and Distichlis.
 
-Old Woman Creek (OWC); one of the COMPASS-FME synoptic sites, located along the polyhaline mouth of the York River, and has three plots: upland ('UP'; located at 37.2192N, 76.4087W), transition ('TR'; 37.2194N, 76.4092W), and wetland ('WC'; 37.2189N, 76.4101W). The site was established in June 2022. The transect spans a coastal loblolly pine forest, a transitional forest with a substantial phragmites stand, and a marsh dominated by Spartina and Distichlis. This site is also identified as a Chesapeake Bay National Research Reserve site.
+Old Woman Creek (OWC); one of the COMPASS-FME synoptic sites, located along the polyhaline mouth of the York River, and has three plots: upland ('UP'; located at 41.37618N, 82.50685W), transition ('TR'; 41.376017N, 82.507507W), and wetland ('WC'; 41.376445N, 82.509024W). The site was established in June 2022. The transect spans a coastal loblolly pine forest, a transitional forest with a substantial phragmites stand, and a marsh dominated by Spartina and Distichlis. This site is also identified as a Chesapeake Bay National Research Reserve site.
   
 
