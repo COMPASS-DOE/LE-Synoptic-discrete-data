@@ -455,7 +455,8 @@ alldat_trimmed$CH4_nmol <- ffi_ppb_to_nmol(alldat_trimmed$CH4,
 #> Assuming atm = 101325 Pa
 #> Using R = 8.31446261815324 m3 Pa K-1 mol-1
 
-alldat_trimmed$CH4_nmol_m2 <- alldat_trimmed$CH4_nmol / 0.16
+#using chamber area here
+alldat_trimmed$CH4_nmol_m2 <- alldat_trimmed$CH4_nmol / alldat_trimmed$Area
 
 fluxes <- ffi_compute_fluxes(alldat_trimmed ,
                              group_column = "Plot", 
